@@ -5,10 +5,10 @@ import type { NextRequest } from "next/server"
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Always allow auth routes, login page, and static assets
+  // Always allow auth routes, root page, and static assets
   if (
     pathname.startsWith("/api/auth") ||
-    pathname === "/login" ||
+    pathname === "/" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon")
   ) {
@@ -18,14 +18,14 @@ export async function proxy(request: NextRequest) {
   const session = await auth()
 
   if (!session) {
-    const loginUrl = new URL("/login", request.url)
-    loginUrl.searchParams.set("callbackUrl", pathname)
-    return NextResponse.redirect(loginUrl)
+    const rootUrl = new URL("/", request.url)
+    rootUrl.searchParams.set("callbackUrl", pathname)
+    return NextResponse.redirect(rootUrl)
   }
 
   // Refresh token failed — force re-login
   if (session.error === "RefreshAccessTokenError") {
-    return NextResponse.redirect(new URL("/login", request.url))
+    return NextResponse.redirect(new URL("/", request.url))
   }
 
   return NextResponse.next()
