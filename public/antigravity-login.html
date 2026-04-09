@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Antigravity System — Access Portal</title>
+  <meta name="description" content="Secure access portal for the Antigravity System. Log in or sign up to manage your antigravity field controls." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Reset & Base ──────────────────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-start:       #04051a;
+      --bg-mid:         #080c2e;
+      --bg-end:         #020310;
+
+      --glass-bg:       rgba(255, 255, 255, 0.045);
+      --glass-border:   rgba(255, 255, 255, 0.10);
+      --glass-shadow:   0 32px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.06);
+
+      --accent:         #4f8eff;
+      --accent-hover:   #3a76e8;
+      --accent-muted:   rgba(79, 142, 255, 0.15);
+      --text-primary:   #f0f2ff;
+      --text-secondary: #8a90b4;
+      --text-muted:     #4a5070;
+      --input-bg:       rgba(255, 255, 255, 0.06);
+      --input-border:   rgba(255, 255, 255, 0.10);
+      --input-focus:    rgba(79, 142, 255, 0.6);
+      --danger:         #ff5a72;
+      --success:        #3ecf8e;
+
+      --font-ui:        'Inter', sans-serif;
+      --font-display:   'Space Grotesk', sans-serif;
+
+      --radius-sm:  6px;
+      --radius-md:  12px;
+      --radius-lg:  20px;
+      --radius-xl:  28px;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font-ui);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--bg-start);
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(30, 50, 140, 0.7) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(10, 20, 80, 0.5) 0%, transparent 60%),
+        linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 45%, var(--bg-end) 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    /* ─── Star field ────────────────────────────────────────────────── */
+    .starfield {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      opacity: 0;
+      animation: twinkle var(--dur, 4s) var(--delay, 0s) infinite ease-in-out;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0; transform: scale(0.6); }
+      50%       { opacity: var(--op, 0.7); transform: scale(1); }
+    }
+
+    /* ─── Header / Nav ──────────────────────────────────────────────── */
+    header {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1200px;
+      padding: 28px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-mark svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .logo-text {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--text-primary);
+    }
+
+    .logo-text span {
+      color: var(--accent);
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-ghost {
+      font-family: var(--font-ui);
+      font-size: 13.5px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      color: var(--text-secondary);
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .btn-ghost:hover {
+      color: var(--text-primary);
+      border-color: rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    /* ─── Page Body ─────────────────────────────────────────────────── */
+    .page-body {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 24px 20px 60px;
+    }
+
+    /* ─── Glass Panel ───────────────────────────────────────────────── */
+    .glass-panel {
+      width: 100%;
+      max-width: 440px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-xl);
+      backdrop-filter: blur(28px) saturate(140%);
+      -webkit-backdrop-filter: blur(28px) saturate(140%);
+      box-shadow: var(--glass-shadow);
+      padding: 36px 36px 40px;
+      animation: levitate 6s ease-in-out infinite;
+    }
+
+    @keyframes levitate {
+      0%   { transform: translateY(0px); }
+      50%  { transform: translateY(-12px); }
+      100% { transform: translateY(0px); }
+    }
+
+    /* ─── Panel Header ──────────────────────────────────────────────── */
+    .panel-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .panel-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .panel-title {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .panel-subtitle {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    /* ─── Tabs ──────────────────────────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      font-family: var(--font-ui);
+      font-size: 13.5px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-radius: 9px;
+      padding: 9px 0;
+      cursor: pointer;
+      transition: color 0.25s ease, background 0.25s ease;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .tab-btn:not(.active):hover {
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* ─── Form Views ────────────────────────────────────────────────── */
+    .form-view {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      animation: fadeSlideIn 0.3s ease forwards;
+    }
+
+    .form-view.visible {
+      display: flex;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Input Fields ──────────────────────────────────────────────── */
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .field-input {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-primary);
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+      -webkit-appearance: none;
+    }
+
+    .field-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .field-input:focus {
+      border-color: var(--accent);
+      background: rgba(79, 142, 255, 0.06);
+      box-shadow: 0 0 0 3px rgba(79, 142, 255, 0.15);
+    }
+
+    /* ─── Drag & Drop Zone ──────────────────────────────────────────── */
+    .drop-zone {
+      border: 2px dashed var(--input-border);
+      border-radius: var(--radius-md);
+      padding: 28px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      background: var(--input-bg);
+      transition: border-color 0.2s ease, background 0.2s ease;
+      text-align: center;
+      position: relative;
+    }
+
+    .drop-zone.drag-over {
+      border-color: var(--accent);
+      border-style: solid;
+      background: var(--accent-muted);
+    }
+
+    .drop-zone.file-accepted {
+      border-color: var(--success);
+      border-style: solid;
+      background: rgba(62, 207, 142, 0.08);
+    }
+
+    .drop-zone-icon {
+      width: 40px;
+      height: 40px;
+      color: var(--text-muted);
+      transition: color 0.2s ease;
+    }
+
+    .drop-zone.drag-over .drop-zone-icon,
+    .drop-zone:hover .drop-zone-icon {
+      color: var(--accent);
+    }
+
+    .drop-zone.file-accepted .drop-zone-icon {
+      color: var(--success);
+    }
+
+    .drop-zone-label {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: color 0.2s ease;
+    }
+
+    .drop-zone.drag-over .drop-zone-label {
+      color: var(--accent);
+    }
+
+    .drop-zone.file-accepted .drop-zone-label {
+      color: var(--success);
+    }
+
+    .drop-zone-hint {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .drop-zone-filename {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--success);
+      display: none;
+      word-break: break-all;
+    }
+
+    .drop-zone.file-accepted .drop-zone-filename {
+      display: block;
+    }
+
+    .drop-zone.file-accepted .drop-zone-hint {
+      display: none;
+    }
+
+    /* hidden file input */
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* ─── Primary Button ────────────────────────────────────────────── */
+    .btn-primary {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 13px 0;
+      width: 100%;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background 0.2s ease, transform 0.12s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 4px 20px rgba(79, 142, 255, 0.35);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.985);
+    }
+
+    /* ─── Divider ────────────────────────────────────────────────────── */
+    .form-note {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    .form-note a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .form-note a:hover {
+      text-decoration: underline;
+    }
+
+    /* ─── Footer ─────────────────────────────────────────────────────── */
+    footer {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1200px;
+      padding: 18px 40px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .footer-copy {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .footer-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      animation: pulse 2.8s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1;   box-shadow: 0 0 0 0 rgba(79, 142, 255, 0.5); }
+      50%       { opacity: 0.7; box-shadow: 0 0 0 5px rgba(79, 142, 255, 0); }
+    }
+
+    /* ─── Responsive ─────────────────────────────────────────────────── */
+    @media (max-width: 540px) {
+      header, footer         { padding-left: 20px; padding-right: 20px; }
+      .glass-panel           { padding: 28px 22px 32px; }
+      .logo-text             { font-size: 15px; }
+      .nav-actions .btn-ghost:first-child { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Star field ─────────────────────────────────────────────────── -->
+  <div class="starfield" id="starfield" aria-hidden="true"></div>
+
+  <!-- ── Header ────────────────────────────────────────────────────── -->
+  <header>
+    <a href="#" class="logo" aria-label="Antigravity Project Home">
+      <div class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="8" cy="8" r="3" fill="#4f8eff"/>
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.22 3.22l1.42 1.42M11.36 11.36l1.42 1.42M11.36 4.64l-1.42 1.42M4.64 11.36l-1.42 1.42"
+                stroke="#4f8eff" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="logo-text">Antigravity<span>.</span></span>
+    </a>
+
+    <nav class="nav-actions" aria-label="Header navigation">
+      <button class="btn-ghost" id="btn-manual" type="button">System Manual</button>
+      <button class="btn-ghost" id="btn-help"   type="button">Ask for Help</button>
+    </nav>
+  </header>
+
+  <!-- ── Page Body ─────────────────────────────────────────────────── -->
+  <main class="page-body">
+    <div class="glass-panel" role="dialog" aria-label="Antigravity System Access Panel">
+
+      <!-- Panel Header -->
+      <div class="panel-header">
+        <p class="panel-eyebrow">Secure Access</p>
+        <h1 class="panel-title">Antigravity System</h1>
+        <p class="panel-subtitle">Authenticate to manage your antigravity field controls.</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tab-bar" role="tablist" aria-label="Authentication mode">
+        <button class="tab-btn active" id="tab-login"  role="tab" aria-selected="true"  aria-controls="view-login"  type="button">Log In</button>
+        <button class="tab-btn"        id="tab-signup" role="tab" aria-selected="false" aria-controls="view-signup" type="button">Sign Up</button>
+      </div>
+
+      <!-- ── Log In View ── -->
+      <div class="form-view visible" id="view-login" role="tabpanel" aria-labelledby="tab-login">
+        <div class="field-group">
+          <label class="field-label" for="login-email">Email</label>
+          <input class="field-input" id="login-email" type="email" placeholder="commander@antigravity.io" autocomplete="email" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="login-password">Password</label>
+          <input class="field-input" id="login-password" type="password" placeholder="••••••••••••" autocomplete="current-password" />
+        </div>
+
+        <button class="btn-primary" id="btn-login" type="button">Log In</button>
+
+        <p class="form-note">Don't have access? <a href="#" id="note-goto-signup">Create an account →</a></p>
+      </div>
+
+      <!-- ── Sign Up View ── -->
+      <div class="form-view" id="view-signup" role="tabpanel" aria-labelledby="tab-signup">
+        <div class="field-group">
+          <label class="field-label" for="signup-name">Full Name</label>
+          <input class="field-input" id="signup-name" type="text" placeholder="Dr. Eleanor Voss" autocomplete="name" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="signup-email">Email</label>
+          <input class="field-input" id="signup-email" type="email" placeholder="eleanor@antigravity.io" autocomplete="email" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="drop-zone-input">Access Token File</label>
+          <!-- Drop Zone -->
+          <div class="drop-zone" id="drop-zone" aria-label="Drag and drop your access token file here">
+            <input type="file" id="drop-zone-input" accept=".token,.key,.json,.txt" aria-label="Select access token file" />
+
+            <!-- Icon -->
+            <svg class="drop-zone-icon" id="drop-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="8" y="10" width="24" height="28" rx="4" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M14 18h12M14 24h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M24 6v6a2 2 0 002 2h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M24 6H12a4 4 0 00-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+
+            <!-- Check icon (shown when file accepted) - hidden by default via JS -->
+            <svg class="drop-zone-icon" id="drop-icon-check" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:none;">
+              <circle cx="20" cy="20" r="14" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M13 20l5 5 9-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+
+            <span class="drop-zone-label" id="drop-label">Drag & Drop your Access Token File here</span>
+            <span class="drop-zone-hint" id="drop-hint">or click to browse — .token, .key, .json, .txt</span>
+            <span class="drop-zone-filename" id="drop-filename"></span>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="btn-signup" type="button">Create Account</button>
+
+        <p class="form-note">Already have access? <a href="#" id="note-goto-login">Log in →</a></p>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ── Footer ─────────────────────────────────────────────────────── -->
+  <footer>
+    <p class="footer-copy">© 2026 Antigravity Systems Inc. All rights reserved.</p>
+    <div class="footer-status" aria-live="polite">
+      <div class="status-dot" aria-hidden="true"></div>
+      <span>Antigravity Field: Standby</span>
+    </div>
+  </footer>
+
+  <!-- ── JavaScript ─────────────────────────────────────────────────── -->
+  <script>
+    /* ── Star Field Generator ─────────────────────────────────────── */
+    (function generateStars() {
+      const field = document.getElementById('starfield');
+      const count = 180;
+      const fragment = document.createDocumentFragment();
+
+      for (let i = 0; i < count; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+
+        const size    = Math.random() * 2.2 + 0.6;
+        const x       = Math.random() * 100;
+        const y       = Math.random() * 100;
+        const dur     = (Math.random() * 5 + 3).toFixed(2);
+        const delay   = (Math.random() * 8).toFixed(2);
+        const opacity = (Math.random() * 0.5 + 0.3).toFixed(2);
+
+        star.style.cssText =
+          `width:${size}px;height:${size}px;` +
+          `left:${x}%;top:${y}%;` +
+          `--dur:${dur}s;--delay:${delay}s;--op:${opacity};`;
+
+        fragment.appendChild(star);
+      }
+
+      field.appendChild(fragment);
+    })();
+
+    /* ── Tab Switching ────────────────────────────────────────────── */
+    const tabLogin   = document.getElementById('tab-login');
+    const tabSignup  = document.getElementById('tab-signup');
+    const viewLogin  = document.getElementById('view-login');
+    const viewSignup = document.getElementById('view-signup');
+
+    function switchToLogin() {
+      tabLogin.classList.add('active');
+      tabSignup.classList.remove('active');
+      tabLogin.setAttribute('aria-selected', 'true');
+      tabSignup.setAttribute('aria-selected', 'false');
+
+      viewLogin.classList.add('visible');
+      viewSignup.classList.remove('visible');
+    }
+
+    function switchToSignup() {
+      tabSignup.classList.add('active');
+      tabLogin.classList.remove('active');
+      tabSignup.setAttribute('aria-selected', 'true');
+      tabLogin.setAttribute('aria-selected', 'false');
+
+      viewSignup.classList.add('visible');
+      viewLogin.classList.remove('visible');
+    }
+
+    tabLogin.addEventListener('click', switchToLogin);
+    tabSignup.addEventListener('click', switchToSignup);
+
+    /* Cross-links inside form notes */
+    document.getElementById('note-goto-signup').addEventListener('click', (e) => {
+      e.preventDefault();
+      switchToSignup();
+    });
+    document.getElementById('note-goto-login').addEventListener('click', (e) => {
+      e.preventDefault();
+      switchToLogin();
+    });
+
+    /* ── Drag & Drop Zone ─────────────────────────────────────────── */
+    const dropZone     = document.getElementById('drop-zone');
+    const dropInput    = document.getElementById('drop-zone-input');
+    const dropLabel    = document.getElementById('drop-label');
+    const dropHint     = document.getElementById('drop-hint');
+    const dropFilename = document.getElementById('drop-filename');
+    const dropIcon     = document.getElementById('drop-icon');
+    const dropIconCheck = document.getElementById('drop-icon-check');
+
+    let dragCounter = 0; // track nested drag events
+
+    function applyFileAccepted(filename) {
+      dropZone.classList.remove('drag-over');
+      dropZone.classList.add('file-accepted');
+      dropLabel.textContent  = 'Token File Loaded';
+      dropFilename.textContent = filename;
+      dropIcon.style.display = 'none';
+      dropIconCheck.style.display = '';
+    }
+
+    function resetDropZone() {
+      dropZone.classList.remove('drag-over', 'file-accepted');
+      dropLabel.textContent  = 'Drag & Drop your Access Token File here';
+      dropFilename.textContent = '';
+      dropIcon.style.display = '';
+      dropIconCheck.style.display = 'none';
+    }
+
+    dropZone.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      dragCounter++;
+      if (!dropZone.classList.contains('file-accepted')) {
+        dropZone.classList.add('drag-over');
+      }
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+      dragCounter--;
+      if (dragCounter === 0) {
+        if (!dropZone.classList.contains('file-accepted')) {
+          dropZone.classList.remove('drag-over');
+        }
+      }
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault(); // allow drop
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragCounter = 0;
+
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        applyFileAccepted(files[0].name);
+      }
+    });
+
+    /* File input (click-to-browse) */
+    dropInput.addEventListener('change', () => {
+      if (dropInput.files && dropInput.files.length > 0) {
+        applyFileAccepted(dropInput.files[0].name);
+      }
+    });
+
+    /* Click anywhere on zone resets if already accepted and re-opens dialog */
+    dropZone.addEventListener('click', () => {
+      // The hidden <input> inside handles the click natively via propagation
+    });
+
+    /* ── Nav button stubs ─────────────────────────────────────────── */
+    document.getElementById('btn-manual').addEventListener('click', () => {
+      alert('System Manual — documentation launching soon.');
+    });
+    document.getElementById('btn-help').addEventListener('click', () => {
+      alert('Support portal — routing your request to Mission Control.');
+    });
+
+    /* ── Form submit stubs ────────────────────────────────────────── */
+    document.getElementById('btn-login').addEventListener('click', () => {
+      const email    = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      if (!email || !password) {
+        alert('Please fill in all fields before logging in.');
+        return;
+      }
+      alert(`Authenticating ${email}…\n(Wire this to your auth backend.)`);
+    });
+
+    document.getElementById('btn-signup').addEventListener('click', () => {
+      const name  = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const hasFile = dropZone.classList.contains('file-accepted');
+      if (!name || !email) {
+        alert('Please enter your name and email.');
+        return;
+      }
+      if (!hasFile) {
+        alert('Please upload your Access Token File to proceed.');
+        return;
+      }
+      alert(`Creating account for ${name} (${email})…\n(Wire this to your auth backend.)`);
+    });
+  </script>
+</body>
+</html>
