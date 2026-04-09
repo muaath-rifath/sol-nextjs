@@ -4,109 +4,151 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Antigravity — Access Portal</title>
-  <meta name="description" content="Antigravity secure access portal. Log in or sign up with your credentials and access token file." />
+  <meta name="description" content="Secure access portal for the Antigravity system. Log in or create an account with your credentials and access token." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <style>
-    /* ─── RESET & TOKENS ─────────────────────────────────────── */
+    /* ═══════════════════════════════════════════════════════════
+       RESET & DESIGN TOKENS
+    ═══════════════════════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg-from:      #0a0f1e;
-      --bg-mid:       #0d1b3e;
-      --bg-to:        #060c18;
+      /* ── Gradient background palette ── */
+      --bg-deep:       #060b18;
+      --bg-mid:        #0c1530;
+      --bg-accent-1:   #111e4a;
+      --bg-accent-2:   #160d32;
 
-      --glass-bg:     rgba(255, 255, 255, 0.055);
-      --glass-border: rgba(255, 255, 255, 0.10);
-      --glass-shadow: 0 32px 80px rgba(0, 0, 0, 0.55), 0 8px 32px rgba(0, 0, 0, 0.35);
+      /* ── Glassmorphism panel ── */
+      --glass-bg:      rgba(255, 255, 255, 0.048);
+      --glass-border:  rgba(255, 255, 255, 0.095);
+      --glass-shadow:
+        0 40px 100px rgba(0, 0, 0, 0.6),
+        0 12px 40px  rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255,255,255,0.08);
 
-      /* ── SOLID matte palette (NO gradients) ── */
-      --clr-primary:   #4f6ef7;     /* solid indigo-blue  */
-      --clr-primary-d: #3a56d4;     /* darker on hover    */
-      --clr-accent:    #7c3aed;     /* solid violet       */
-      --clr-success:   #10b981;     /* solid emerald      */
-      --clr-surface:   #131b35;     /* solid dark surface */
-      --clr-surface2:  #1a2448;     /* slightly lighter   */
-      --clr-border:    #2a3660;     /* solid matte border */
+      /* ── Solid matte palette — NO gradients on components ── */
+      --clr-primary:    #4a69f5;   /* solid indigo        */
+      --clr-primary-h:  #3b55d6;   /* hover state         */
+      --clr-primary-a:  #324abf;   /* active/pressed      */
+      --clr-accent:     #7340e8;   /* solid violet        */
+      --clr-surface:    #111827;   /* solid dark surface  */
+      --clr-surface-2:  #192036;   /* solid lighter surf  */
+      --clr-surface-3:  #1e2844;   /* solid lightest surf */
+      --clr-border:     #253060;   /* solid matte border  */
+      --clr-border-l:   #2e3d78;   /* lighter border      */
+      --clr-success:    #10b981;   /* solid emerald       */
+      --clr-success-bg: rgba(16, 185, 129, 0.09);
+      --clr-warn:       #f59e0b;   /* solid amber         */
 
-      --txt-primary:   #e8ecf8;
-      --txt-secondary: #8b96bb;
-      --txt-muted:     #5a6585;
+      /* ── Text ── */
+      --txt-primary:   #eaedfa;
+      --txt-secondary: #8a96be;
+      --txt-muted:     #536080;
+      --txt-invert:    #ffffff;
 
-      --radius-sm:  8px;
+      /* ── Geometry ── */
+      --radius-xs:  6px;
+      --radius-sm:  10px;
       --radius-md:  14px;
-      --radius-lg:  22px;
-      --radius-xl:  32px;
+      --radius-lg:  20px;
+      --radius-xl:  28px;
 
-      --font-sans: 'Inter', system-ui, sans-serif;
+      /* ── Typography ── */
+      --font-body:    'Inter', system-ui, sans-serif;
       --font-display: 'Space Grotesk', system-ui, sans-serif;
 
-      --transition: 0.22s cubic-bezier(.4, 0, .2, 1);
+      /* ── Motion ── */
+      --ease:   cubic-bezier(.4, 0, .2, 1);
+      --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+      --dur:    0.2s;
     }
 
     html, body {
       height: 100%;
-      font-family: var(--font-sans);
+      font-family: var(--font-body);
       color: var(--txt-primary);
       overflow-x: hidden;
     }
 
+    /* ═══════════════════════════════════════════════════════════
+       GRADIENT BACKGROUND  (only place gradients appear)
+    ═══════════════════════════════════════════════════════════ */
     body {
-      /* Smooth multi-stop gradient background */
-      background: 
-        radial-gradient(ellipse 80% 60% at 20% 10%, #1a2456 0%, transparent 60%),
-        radial-gradient(ellipse 60% 80% at 80% 90%, #1a0e36 0%, transparent 55%),
-        radial-gradient(ellipse 100% 100% at 50% 50%, #0a0f1e 0%, #060c18 100%);
+      background:
+        radial-gradient(ellipse 90% 55% at 15%  5%,  #132054 0%, transparent 65%),
+        radial-gradient(ellipse 70% 70% at 85% 95%,  #1a0b40 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 70% 20%,  #0e1838 0%, transparent 50%),
+        radial-gradient(ellipse 100% 100% at 50% 50%, var(--bg-mid) 0%, var(--bg-deep) 100%);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
-    /* ─── SUBTLE BACKGROUND STARS ───────────────────────────── */
+    /* Subtle star field */
     body::before {
       content: '';
       position: fixed;
       inset: 0;
-      background-image:
-        radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,0.5) 0%, transparent 100%),
-        radial-gradient(1px 1px at 73% 12%, rgba(255,255,255,0.4) 0%, transparent 100%),
-        radial-gradient(1px 1px at 42% 68%, rgba(255,255,255,0.3) 0%, transparent 100%),
-        radial-gradient(1px 1px at 88% 44%, rgba(255,255,255,0.4) 0%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 5%  80%, rgba(255,255,255,0.3) 0%, transparent 100%),
-        radial-gradient(1px 1px at 60% 90%, rgba(255,255,255,0.25) 0%, transparent 100%),
-        radial-gradient(1px 1px at 30% 50%, rgba(255,255,255,0.2) 0%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 95% 75%, rgba(255,255,255,0.3) 0%, transparent 100%);
       pointer-events: none;
       z-index: 0;
+      background-image:
+        radial-gradient(1px   1px   at 12% 22%,  rgba(255,255,255,.50) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 74% 11%,  rgba(255,255,255,.40) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 43% 67%,  rgba(255,255,255,.30) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 89% 43%,  rgba(255,255,255,.40) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at  4% 81%,  rgba(255,255,255,.30) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 61% 91%,  rgba(255,255,255,.25) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 31% 52%,  rgba(255,255,255,.20) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 96% 76%,  rgba(255,255,255,.30) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 55% 35%,  rgba(255,255,255,.18) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 22% 88%,  rgba(255,255,255,.22) 0%, transparent 100%);
     }
 
-    /* ─── HEADER ─────────────────────────────────────────────── */
+    /* Floating orbs for depth */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        radial-gradient(200px 200px at 10% 15%,  rgba(74,105,245,.06) 0%, transparent 100%),
+        radial-gradient(250px 250px at 90% 80%,  rgba(115,64,232,.05) 0%, transparent 100%),
+        radial-gradient(150px 150px at 60% 40%,  rgba(74,105,245,.04) 0%, transparent 100%);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       HEADER
+    ═══════════════════════════════════════════════════════════ */
     header {
       position: relative;
-      z-index: 10;
+      z-index: 20;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 18px 40px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      background: rgba(10, 15, 30, 0.6);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      padding: 16px 44px;
+      border-bottom: 1px solid rgba(255,255,255,0.055);
+      background: rgba(6, 11, 24, 0.70);
+      backdrop-filter: blur(16px) saturate(1.2);
+      -webkit-backdrop-filter: blur(16px) saturate(1.2);
     }
 
+    /* Logo */
     .logo {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 13px;
       text-decoration: none;
     }
 
-    .logo-icon {
-      width: 40px;
-      height: 40px;
-      background: var(--clr-primary);
+    .logo-mark {
+      width: 42px;
+      height: 42px;
+      background: var(--clr-primary);        /* solid — no gradient */
       border-radius: var(--radius-sm);
       display: flex;
       align-items: center;
@@ -114,64 +156,80 @@
       flex-shrink: 0;
     }
 
-    .logo-icon svg {
-      width: 22px;
-      height: 22px;
+    .logo-mark svg {
+      width: 23px;
+      height: 23px;
       fill: none;
       stroke: #fff;
-      stroke-width: 2;
+      stroke-width: 1.8;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
-    .logo-text {
+    .logo-wordmark {
       font-family: var(--font-display);
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       font-weight: 700;
       color: var(--txt-primary);
-      letter-spacing: -0.01em;
+      letter-spacing: -0.02em;
     }
 
-    .logo-text span {
-      color: var(--txt-secondary);
-      font-weight: 400;
-      font-size: 0.75rem;
+    .logo-wordmark small {
       display: block;
-      letter-spacing: 0.06em;
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      font-weight: 400;
+      color: var(--txt-muted);
+      letter-spacing: 0.07em;
       text-transform: uppercase;
+      margin-top: 1px;
     }
 
-    .header-actions {
+    /* Header action buttons — solid matte, no gradients */
+    .header-nav {
       display: flex;
-      gap: 10px;
+      align-items: center;
+      gap: 8px;
     }
 
-    /* SOLID matte header buttons — no gradients */
-    .btn-header {
-      font-family: var(--font-sans);
-      font-size: 0.82rem;
+    .btn-nav {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
       font-weight: 500;
       padding: 8px 18px;
-      border-radius: var(--radius-sm);
       border: none;
+      border-radius: var(--radius-sm);
       cursor: pointer;
-      transition: background var(--transition), transform var(--transition);
-      letter-spacing: 0.01em;
+      letter-spacing: 0.015em;
+      transition:
+        background var(--dur) var(--ease),
+        color     var(--dur) var(--ease),
+        transform var(--dur) var(--ease);
     }
 
-    #btn-user-manual {
-      background: var(--clr-surface2);
+    #btn-manual {
+      background: var(--clr-surface-2);      /* solid dark surface */
+      color: var(--txt-secondary);
+      border: 1px solid var(--clr-border);
+    }
+    #btn-manual:hover {
+      background: var(--clr-surface-3);
       color: var(--txt-primary);
+      transform: translateY(-1px);
     }
-    #btn-user-manual:hover { background: #22305a; transform: translateY(-1px); }
 
-    #btn-ask-help {
-      background: var(--clr-primary);
+    #btn-help {
+      background: var(--clr-primary);        /* solid indigo */
       color: #fff;
     }
-    #btn-ask-help:hover { background: var(--clr-primary-d); transform: translateY(-1px); }
+    #btn-help:hover {
+      background: var(--clr-primary-h);
+      transform: translateY(-1px);
+    }
 
-    /* ─── MAIN CONTENT AREA ──────────────────────────────────── */
+    /* ═══════════════════════════════════════════════════════════
+       MAIN CONTENT
+    ═══════════════════════════════════════════════════════════ */
     main {
       position: relative;
       z-index: 1;
@@ -179,108 +237,115 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 48px 24px;
+      padding: 52px 24px;
     }
 
-    /* ─── LEVITATING GLASSMORPHISM PANEL ─────────────────────── */
+    /* ═══════════════════════════════════════════════════════════
+       LEVITATING GLASS PANEL
+    ═══════════════════════════════════════════════════════════ */
     .glass-panel {
       width: 100%;
-      max-width: 440px;
+      max-width: 448px;
       background: var(--glass-bg);
-      backdrop-filter: blur(28px) saturate(1.4);
-      -webkit-backdrop-filter: blur(28px) saturate(1.4);
+      backdrop-filter: blur(32px) saturate(1.5);
+      -webkit-backdrop-filter: blur(32px) saturate(1.5);
       border: 1px solid var(--glass-border);
       border-radius: var(--radius-xl);
       box-shadow: var(--glass-shadow);
-      padding: 40px 40px 36px;
-      animation: levitate 5s ease-in-out infinite;
+      padding: 42px 42px 38px;
+      animation: levitate 6s ease-in-out infinite;
     }
 
     @keyframes levitate {
-      0%   { transform: translateY(0px);   }
-      30%  { transform: translateY(-12px);  }
-      60%  { transform: translateY(-6px);   }
-      80%  { transform: translateY(-14px);  }
-      100% { transform: translateY(0px);   }
+      0%   { transform: translateY(0px);  }
+      50%  { transform: translateY(-14px); }
+      100% { transform: translateY(0px);  }
     }
 
-    /* ─── PANEL HEADER ───────────────────────────────────────── */
+    /* ── Panel brand ── */
     .panel-brand {
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 30px;
     }
 
-    .panel-brand-icon {
-      width: 56px;
-      height: 56px;
-      background: var(--clr-primary);
+    .panel-icon {
+      width: 58px;
+      height: 58px;
+      background: var(--clr-primary);         /* solid — no gradient */
       border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 14px;
+      margin: 0 auto 16px;
     }
 
-    .panel-brand-icon svg {
-      width: 28px;
-      height: 28px;
+    .panel-icon svg {
+      width: 30px;
+      height: 30px;
       fill: none;
       stroke: #fff;
-      stroke-width: 2;
+      stroke-width: 1.8;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
     .panel-title {
       font-family: var(--font-display);
-      font-size: 1.55rem;
+      font-size: 1.6rem;
       font-weight: 700;
-      color: var(--txt-primary);
-      letter-spacing: -0.02em;
-      margin-bottom: 4px;
+      color: var(--txt-primary);              /* solid — no gradient */
+      letter-spacing: -0.025em;
+      margin-bottom: 5px;
     }
 
-    .panel-subtitle {
-      font-size: 0.85rem;
+    .panel-sub {
+      font-size: 0.84rem;
       color: var(--txt-secondary);
       font-weight: 400;
     }
 
-    /* ─── TOGGLE ─────────────────────────────────────────────── */
+    /* ═══════════════════════════════════════════════════════════
+       VIEW TOGGLE  — solid matte, no gradients
+    ═══════════════════════════════════════════════════════════ */
     .view-toggle {
       display: flex;
       background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
       border-radius: var(--radius-md);
       padding: 4px;
       margin-bottom: 28px;
-      border: 1px solid var(--clr-border);
+      gap: 4px;
     }
 
-    .toggle-btn {
+    .tab-btn {
       flex: 1;
-      font-family: var(--font-sans);
-      font-size: 0.88rem;
+      font-family: var(--font-body);
+      font-size: 0.875rem;
       font-weight: 500;
       padding: 9px 0;
       border: none;
       border-radius: calc(var(--radius-md) - 2px);
       cursor: pointer;
-      transition: background var(--transition), color var(--transition);
+      transition:
+        background var(--dur) var(--ease),
+        color     var(--dur) var(--ease);
       background: transparent;
       color: var(--txt-muted);
     }
 
-    .toggle-btn.active {
-      background: var(--clr-primary);  /* solid color, no gradient */
+    .tab-btn.active {
+      background: var(--clr-primary);         /* solid indigo — no gradient */
       color: #fff;
     }
 
-    .toggle-btn:not(.active):hover {
+    .tab-btn:not(.active):hover {
+      background: var(--clr-surface-2);
       color: var(--txt-secondary);
-      background: rgba(255,255,255,0.04);
     }
 
-    /* ─── VIEWS ──────────────────────────────────────────────── */
+    /* ═══════════════════════════════════════════════════════════
+       VIEWS
+    ═══════════════════════════════════════════════════════════ */
     .view {
       display: none;
       flex-direction: column;
@@ -288,85 +353,137 @@
     }
     .view.active { display: flex; }
 
-    /* ─── FORM FIELDS ────────────────────────────────────────── */
+    /* ── Form fields ── */
     .field {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 7px;
     }
 
-    label {
-      font-size: 0.8rem;
+    .field > label {
+      font-size: 0.765rem;
+      font-weight: 600;
+      color: var(--txt-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    /* Forgot password — solid matte text link, no gradient */
+    .forgot-link {
+      font-size: 0.72rem;
       font-weight: 500;
       color: var(--txt-secondary);
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
+      text-decoration: none;
+      text-transform: none;
+      letter-spacing: 0;
+      transition: color var(--dur) var(--ease);
     }
+    .forgot-link:hover { color: var(--clr-primary); }
 
-    /* SOLID matte input — absolutely no gradient */
+    /* Inputs — solid matte, absolutely NO gradient */
     input[type="text"],
     input[type="email"],
     input[type="password"] {
-      font-family: var(--font-sans);
-      font-size: 0.95rem;
+      font-family: var(--font-body);
+      font-size: 0.935rem;
       color: var(--txt-primary);
-      background: var(--clr-surface);       /* solid matte */
-      border: 1px solid var(--clr-border);  /* solid matte border */
+      background: var(--clr-surface);          /* solid dark */
+      border: 1px solid var(--clr-border);     /* solid matte */
       border-radius: var(--radius-sm);
-      padding: 12px 14px;
-      outline: none;
-      transition: border-color var(--transition), background var(--transition);
+      padding: 12px 15px;
       width: 100%;
+      outline: none;
+      transition:
+        border-color var(--dur) var(--ease),
+        background   var(--dur) var(--ease);
     }
 
     input::placeholder { color: var(--txt-muted); }
 
     input:focus {
-      border-color: var(--clr-primary);     /* solid color on focus */
-      background: var(--clr-surface2);      /* solid matte on focus */
+      border-color: var(--clr-primary);        /* solid color on focus */
+      background: var(--clr-surface-2);        /* solid slight lift */
     }
 
-    /* ─── SUBMIT BUTTONS ─────────────────────────────────────── */
+    /* ── Submit buttons — solid matte, no gradient ── */
     .btn-submit {
-      font-family: var(--font-sans);
-      font-size: 0.95rem;
+      font-family: var(--font-body);
+      font-size: 0.935rem;
       font-weight: 600;
       color: #fff;
-      background: var(--clr-primary);   /* solid color — NO gradient */
+      background: var(--clr-primary);          /* solid indigo — no gradient */
       border: none;
       border-radius: var(--radius-sm);
       padding: 13px 0;
       width: 100%;
       cursor: pointer;
       letter-spacing: 0.02em;
-      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
-      margin-top: 6px;
+      transition:
+        background  var(--dur) var(--ease),
+        transform   var(--dur) var(--ease-spring),
+        box-shadow  var(--dur) var(--ease);
+      margin-top: 4px;
     }
 
     .btn-submit:hover {
-      background: var(--clr-primary-d);
+      background: var(--clr-primary-h);
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(79, 110, 247, 0.35);
+      box-shadow: 0 10px 28px rgba(74, 105, 245, 0.32);
     }
 
-    .btn-submit:active { transform: translateY(0); }
+    .btn-submit:active {
+      background: var(--clr-primary-a);
+      transform: translateY(0);
+      box-shadow: none;
+    }
 
-    /* ─── DRAG & DROP ZONE ───────────────────────────────────── */
+    /* ── Divider ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 2px 0;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--clr-border);           /* solid */
+    }
+
+    .divider-text {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--txt-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       DRAG & DROP ZONE — solid dashed border, no gradients
+    ═══════════════════════════════════════════════════════════ */
     .drop-zone {
-      border: 2px dashed var(--clr-border);  /* solid dashed — no gradient */
+      position: relative;
+      border: 2px dashed var(--clr-border);    /* solid dashed — no gradient */
       border-radius: var(--radius-md);
-      padding: 28px 20px;
+      padding: 28px 20px 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 9px;
       cursor: pointer;
-      transition:
-        border-color var(--transition),
-        background var(--transition);
-      background: transparent;
       text-align: center;
-      position: relative;
+      transition:
+        border-color var(--dur) var(--ease),
+        background   var(--dur) var(--ease);
+      background: transparent;
+      overflow: hidden;
     }
 
     .drop-zone input[type="file"] {
@@ -374,207 +491,206 @@
       inset: 0;
       opacity: 0;
       cursor: pointer;
+      width: 100%;
+      height: 100%;
     }
 
-    .drop-zone-icon {
-      width: 44px;
-      height: 44px;
-      background: var(--clr-surface2);   /* solid matte */
+    .dz-icon-wrap {
+      width: 48px;
+      height: 48px;
+      background: var(--clr-surface-2);        /* solid matte */
       border-radius: var(--radius-sm);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background var(--transition);
+      flex-shrink: 0;
+      transition: background var(--dur) var(--ease);
     }
 
-    .drop-zone-icon svg {
-      width: 22px;
-      height: 22px;
+    .dz-icon-wrap svg {
+      width: 24px;
+      height: 24px;
       fill: none;
       stroke: var(--clr-primary);
-      stroke-width: 2;
+      stroke-width: 1.8;
       stroke-linecap: round;
       stroke-linejoin: round;
+      transition: stroke var(--dur) var(--ease);
     }
 
-    .drop-zone-label {
+    .dz-title {
       font-weight: 600;
       font-size: 0.9rem;
       color: var(--txt-primary);
     }
 
-    .drop-zone-sub {
-      font-size: 0.78rem;
+    .dz-hint {
+      font-size: 0.75rem;
       color: var(--txt-muted);
     }
 
-    .drop-zone-filename {
+    .dz-filename {
       font-size: 0.8rem;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--clr-success);
       display: none;
     }
 
-    /* DRAG-OVER STATE — solid background, no gradient */
+    /* DRAG-OVER — solid background highlight, no gradient */
     .drop-zone.drag-over {
       border-color: var(--clr-primary);
-      background: var(--clr-surface2);  /* solid matte highlight */
+      background: var(--clr-surface-2);        /* solid matte */
     }
 
-    .drop-zone.drag-over .drop-zone-icon {
-      background: var(--clr-primary);
+    .drop-zone.drag-over .dz-icon-wrap {
+      background: var(--clr-primary);          /* solid on hover */
     }
 
-    .drop-zone.drag-over .drop-zone-icon svg {
+    .drop-zone.drag-over .dz-icon-wrap svg {
       stroke: #fff;
     }
 
-    .drop-zone.drag-over .drop-zone-label {
-      color: var(--txt-primary);
-    }
-
-    /* File accepted state */
+    /* FILE-ACCEPTED state */
     .drop-zone.file-accepted {
       border-color: var(--clr-success);
-      background: rgba(16, 185, 129, 0.07);  /* very subtle solid tint */
+      background: var(--clr-success-bg);       /* solid very-low-opacity tint */
     }
 
-    /* ─── DIVIDER ─────────────────────────────────────────────── */
-    .divider {
-      height: 1px;
-      background: var(--clr-border);   /* solid color */
-      margin: 4px 0;
+    .drop-zone.file-accepted .dz-icon-wrap {
+      background: rgba(16, 185, 129, 0.18);
     }
 
-    /* ─── SECTION LABEL ───────────────────────────────────────── */
-    .section-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--txt-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      margin-bottom: 2px;
+    .drop-zone.file-accepted .dz-icon-wrap svg {
+      stroke: var(--clr-success);
     }
 
-    /* ─── FOOTER ─────────────────────────────────────────────── */
+    /* ═══════════════════════════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════════════════════════ */
     footer {
       position: relative;
-      z-index: 10;
+      z-index: 20;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 40px;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      background: rgba(10, 15, 30, 0.6);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      padding: 13px 44px;
+      border-top: 1px solid rgba(255,255,255,0.055);
+      background: rgba(6, 11, 24, 0.70);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       flex-wrap: wrap;
       gap: 10px;
     }
 
     .footer-copy {
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       color: var(--txt-muted);
     }
 
+    /* Antigravity Field Status indicator — solid pill */
     .field-status {
       display: flex;
       align-items: center;
-      gap: 8px;
-      background: var(--clr-surface);    /* solid matte pill */
+      gap: 9px;
+      background: var(--clr-surface);          /* solid dark surface */
       border: 1px solid var(--clr-border);
       border-radius: 100px;
-      padding: 5px 14px 5px 10px;
+      padding: 5px 14px 5px 9px;
     }
 
     .status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--clr-success);    /* solid green */
+      background: var(--clr-success);          /* solid green */
       flex-shrink: 0;
-      animation: pulse-dot 2.4s ease-in-out infinite;
+      animation: pulse-dot 2.2s ease-in-out infinite;
     }
 
     @keyframes pulse-dot {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.35; }
+      0%, 100% { opacity: 1;    }
+      50%       { opacity: 0.3; }
     }
 
     .status-text {
-      font-size: 0.76rem;
+      font-size: 0.745rem;
       font-weight: 500;
       color: var(--txt-secondary);
       letter-spacing: 0.02em;
     }
 
-    .status-badge {
-      font-size: 0.68rem;
-      font-weight: 600;
-      color: var(--clr-success);
-      background: rgba(16, 185, 129, 0.12);  /* solid tint */
+    .status-chip {
+      font-size: 0.67rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--clr-success);               /* solid green text */
+      background: rgba(16, 185, 129, 0.14);    /* very subtle solid tint */
       border-radius: 4px;
-      padding: 1px 6px;
+      padding: 2px 7px;
     }
 
-    /* ─── RESPONSIVE ─────────────────────────────────────────── */
-    @media (max-width: 600px) {
-      header { padding: 14px 20px; }
+    /* ═══════════════════════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════════════════════ */
+    @media (max-width: 560px) {
+      header  { padding: 14px 20px; }
       footer  { padding: 12px 20px; }
+      main    { padding: 32px 16px; }
       .glass-panel { padding: 30px 24px 28px; }
-      .header-actions .btn-header:first-child { display: none; }
-      .panel-title { font-size: 1.35rem; }
+      #btn-manual  { display: none; }
+      .panel-title { font-size: 1.4rem; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ═══════════════ HEADER ═══════════════ -->
+  <!-- ═══════════════════════ HEADER ═══════════════════════ -->
   <header>
     <a class="logo" href="#" id="logo-link" aria-label="Antigravity Home">
-      <div class="logo-icon" aria-hidden="true">
-        <!-- Orbit/atom icon -->
+      <div class="logo-mark" aria-hidden="true">
+        <!-- Atom / orbit icon -->
         <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="3"/>
-          <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(0 12 12)"/>
-          <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/>
-          <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/>
+          <circle cx="12" cy="12" r="2.5"/>
+          <ellipse cx="12" cy="12" rx="10" ry="3.8"/>
+          <ellipse cx="12" cy="12" rx="10" ry="3.8" transform="rotate(60  12 12)"/>
+          <ellipse cx="12" cy="12" rx="10" ry="3.8" transform="rotate(120 12 12)"/>
         </svg>
       </div>
-      <div class="logo-text">
+      <div class="logo-wordmark">
         Antigravity
-        <span>System Access Portal</span>
+        <small>System Access Portal</small>
       </div>
     </a>
 
-    <div class="header-actions">
-      <button class="btn-header" id="btn-user-manual" type="button">User Manual</button>
-      <button class="btn-header" id="btn-ask-help"    type="button">Ask for Help</button>
-    </div>
+    <nav class="header-nav" aria-label="Header actions">
+      <button class="btn-nav" id="btn-manual"  type="button">User Manual</button>
+      <button class="btn-nav" id="btn-help"    type="button">Ask for Help</button>
+    </nav>
   </header>
 
-  <!-- ═══════════════ MAIN ═══════════════ -->
+  <!-- ═══════════════════════ MAIN ═══════════════════════ -->
   <main>
     <div class="glass-panel" id="glass-panel" role="region" aria-label="Authentication Panel">
 
-      <!-- Panel branding -->
+      <!-- Panel brand -->
       <div class="panel-brand">
-        <div class="panel-brand-icon" aria-hidden="true">
+        <div class="panel-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="3"/>
-            <ellipse cx="12" cy="12" rx="10" ry="4"/>
-            <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/>
-            <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/>
+            <circle cx="12" cy="12" r="2.5"/>
+            <ellipse cx="12" cy="12" rx="10" ry="3.8"/>
+            <ellipse cx="12" cy="12" rx="10" ry="3.8" transform="rotate(60  12 12)"/>
+            <ellipse cx="12" cy="12" rx="10" ry="3.8" transform="rotate(120 12 12)"/>
           </svg>
         </div>
-        <h1 class="panel-title">Welcome Back</h1>
-        <p class="panel-subtitle">Antigravity — Secure Access Portal</p>
+        <h1 class="panel-title" id="panel-title">Welcome Back</h1>
+        <p  class="panel-sub"   id="panel-sub">Antigravity — Secure Access Portal</p>
       </div>
 
       <!-- View toggle -->
       <div class="view-toggle" role="tablist" aria-label="Authentication mode">
         <button
-          class="toggle-btn active"
+          class="tab-btn active"
           id="tab-login"
           role="tab"
           aria-selected="true"
@@ -583,7 +699,7 @@
           onclick="switchView('login')"
         >Log In</button>
         <button
-          class="toggle-btn"
+          class="tab-btn"
           id="tab-signup"
           role="tab"
           aria-selected="false"
@@ -593,7 +709,7 @@
         >Sign Up</button>
       </div>
 
-      <!-- ─── LOGIN VIEW ─────────────────────────── -->
+      <!-- ───────────── LOG IN VIEW ───────────── -->
       <div class="view active" id="view-login" role="tabpanel" aria-labelledby="tab-login">
 
         <div class="field">
@@ -609,12 +725,15 @@
         </div>
 
         <div class="field">
-          <label for="login-password">Password</label>
+          <label for="login-password">
+            Password
+            <a href="#" class="forgot-link" id="forgot-link" tabindex="0">Forgot password?</a>
+          </label>
           <input
             type="password"
             id="login-password"
             name="login-password"
-            placeholder="••••••••••"
+            placeholder="••••••••••••"
             autocomplete="current-password"
             required
           />
@@ -624,9 +743,9 @@
           Log In
         </button>
 
-      </div>
+      </div><!-- /view-login -->
 
-      <!-- ─── SIGN UP VIEW ───────────────────────── -->
+      <!-- ───────────── SIGN UP VIEW ───────────── -->
       <div class="view" id="view-signup" role="tabpanel" aria-labelledby="tab-signup">
 
         <div class="field">
@@ -653,11 +772,23 @@
           />
         </div>
 
-        <div class="divider"></div>
+        <div class="field">
+          <label for="signup-password">Password</label>
+          <input
+            type="password"
+            id="signup-password"
+            name="signup-password"
+            placeholder="Min. 8 characters"
+            autocomplete="new-password"
+            required
+          />
+        </div>
 
-        <!-- Drag & Drop Zone -->
-        <p class="section-label">Access Token File</p>
+        <div class="divider">
+          <span class="divider-text">Access Token File</span>
+        </div>
 
+        <!-- ─── Drag & Drop Zone ─── -->
         <div
           class="drop-zone"
           id="drop-zone"
@@ -675,7 +806,8 @@
             aria-hidden="true"
           />
 
-          <div class="drop-zone-icon" aria-hidden="true">
+          <div class="dz-icon-wrap" aria-hidden="true">
+            <!-- Upload icon -->
             <svg viewBox="0 0 24 24">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="17 8 12 3 7 8"/>
@@ -683,121 +815,128 @@
             </svg>
           </div>
 
-          <p class="drop-zone-label">Drag &amp; Drop your Access Token File here</p>
-          <p class="drop-zone-sub">or click to browse — .token .json .key .pem</p>
-          <p class="drop-zone-filename" id="drop-zone-filename" aria-live="polite"></p>
+          <p class="dz-title"  id="dz-title">Drag &amp; Drop your Access Token File here</p>
+          <p class="dz-hint"   id="dz-hint">or click to browse &mdash; .token&nbsp; .json&nbsp; .key&nbsp; .pem</p>
+          <p class="dz-filename" id="dz-filename" aria-live="polite"></p>
         </div>
 
         <button class="btn-submit" id="btn-signup" type="button" onclick="handleSignUp()">
           Create Account
         </button>
 
-      </div>
-      <!-- end views -->
+      </div><!-- /view-signup -->
 
-    </div>
-    <!-- end glass-panel -->
+    </div><!-- /glass-panel -->
   </main>
 
-  <!-- ═══════════════ FOOTER ═══════════════ -->
+  <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
   <footer>
-    <p class="footer-copy" id="footer-copyright">
+    <p class="footer-copy" id="footer-copy">
       &copy; <span id="footer-year"></span> Antigravity Systems. All rights reserved.
     </p>
 
     <div class="field-status" id="field-status" aria-label="Antigravity Field Status">
       <div class="status-dot" aria-hidden="true"></div>
       <span class="status-text">Antigravity Field Status</span>
-      <span class="status-badge" id="status-badge">NOMINAL</span>
+      <span class="status-chip" id="status-chip">Nominal</span>
     </div>
   </footer>
 
-  <!-- ═══════════════ JAVASCRIPT ═══════════════ -->
+  <!-- ═══════════════════════ JAVASCRIPT ═══════════════════════ -->
   <script>
     'use strict';
 
-    /* ── Year ──────────────────────────────── */
+    /* ── Footer year ──────────────────────── */
     document.getElementById('footer-year').textContent = new Date().getFullYear();
 
-    /* ── View Toggle ───────────────────────── */
+    /* ── View toggle ──────────────────────── */
     function switchView(view) {
-      const isLogin  = view === 'login';
-      const tabLogin = document.getElementById('tab-login');
-      const tabSign  = document.getElementById('tab-signup');
-      const vLogin   = document.getElementById('view-login');
-      const vSign    = document.getElementById('view-signup');
-      const title    = document.querySelector('.panel-title');
-      const sub      = document.querySelector('.panel-subtitle');
+      const isLogin = (view === 'login');
 
-      tabLogin.classList.toggle('active', isLogin);
-      tabSign.classList.toggle('active', !isLogin);
-      tabLogin.setAttribute('aria-selected', String(isLogin));
-      tabSign.setAttribute('aria-selected',  String(!isLogin));
+      const tabLogin  = document.getElementById('tab-login');
+      const tabSignup = document.getElementById('tab-signup');
+      const vLogin    = document.getElementById('view-login');
+      const vSignup   = document.getElementById('view-signup');
+      const title     = document.getElementById('panel-title');
+      const sub       = document.getElementById('panel-sub');
 
-      vLogin.classList.toggle('active', isLogin);
-      vSign.classList.toggle('active', !isLogin);
+      // Toggle tabs
+      tabLogin.classList.toggle('active',  isLogin);
+      tabSignup.classList.toggle('active', !isLogin);
+      tabLogin.setAttribute('aria-selected',  String(isLogin));
+      tabSignup.setAttribute('aria-selected', String(!isLogin));
 
-      title.textContent = isLogin ? 'Welcome Back'     : 'Create Account';
+      // Toggle views
+      vLogin.classList.toggle('active',  isLogin);
+      vSignup.classList.toggle('active', !isLogin);
+
+      // Update panel heading
+      title.textContent = isLogin ? 'Welcome Back'        : 'Create Account';
       sub.textContent   = isLogin
         ? 'Antigravity — Secure Access Portal'
         : 'Join the Antigravity Network';
     }
 
-    /* ── Drag & Drop ───────────────────────── */
-    const dropZone     = document.getElementById('drop-zone');
-    const fileInput    = document.getElementById('token-file-input');
-    const fileLabel    = document.getElementById('drop-zone-filename');
-    const dropSubText  = dropZone.querySelector('.drop-zone-sub');
-    const dropMainText = dropZone.querySelector('.drop-zone-label');
+    /* ── Drag & Drop ──────────────────────── */
+    const dropZone  = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('token-file-input');
+    const dzTitle   = document.getElementById('dz-title');
+    const dzHint    = document.getElementById('dz-hint');
+    const dzFile    = document.getElementById('dz-filename');
+
+    function formatBytes(bytes) {
+      if (bytes < 1024)    return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
 
     function setAccepted(file) {
       dropZone.classList.remove('drag-over');
       dropZone.classList.add('file-accepted');
-      fileLabel.style.display  = 'block';
-      fileLabel.textContent    = `✓  ${file.name}  (${formatBytes(file.size)})`;
-      dropMainText.textContent = 'Token file attached';
-      dropSubText.textContent  = 'Click to replace';
+      dzTitle.textContent  = 'Token file attached';
+      dzHint.textContent   = 'Click to replace';
+      dzFile.style.display = 'block';
+      dzFile.textContent   = `✓  ${file.name}  (${formatBytes(file.size)})`;
     }
 
-    function formatBytes(bytes) {
-      if (bytes < 1024)       return bytes + ' B';
-      if (bytes < 1048576)    return (bytes / 1024).toFixed(1) + ' KB';
-      return (bytes / 1048576).toFixed(1) + ' MB';
-    }
-
-    /* Drag events */
+    // Drag enter
     dropZone.addEventListener('dragenter', (e) => {
       e.preventDefault();
-      dropZone.classList.add('drag-over');
+      if (!dropZone.classList.contains('file-accepted')) {
+        dropZone.classList.add('drag-over');
+      }
     });
 
+    // Drag over
     dropZone.addEventListener('dragover', (e) => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
-      dropZone.classList.add('drag-over');
+      if (!dropZone.classList.contains('file-accepted')) {
+        dropZone.classList.add('drag-over');
+      }
     });
 
+    // Drag leave — only remove class when cursor truly leaves the zone
     dropZone.addEventListener('dragleave', (e) => {
-      // Only remove if cursor left the zone entirely
       if (!dropZone.contains(e.relatedTarget)) {
         dropZone.classList.remove('drag-over');
       }
     });
 
+    // Drop
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
-      dropZone.classList.remove('drag-over');
       const file = e.dataTransfer.files[0];
       if (file) setAccepted(file);
     });
 
-    /* Click to browse */
+    // Click to browse
     fileInput.addEventListener('change', () => {
       const file = fileInput.files[0];
       if (file) setAccepted(file);
     });
 
-    /* Keyboard accessibility */
+    // Keyboard accessibility
     dropZone.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -805,40 +944,54 @@
       }
     });
 
-    /* ── Handlers (stub) ────────────────────── */
+    /* ── Form handlers (stub — wire to your API) ── */
     function handleLogin() {
       const email = document.getElementById('login-email').value.trim();
-      const pass  = document.getElementById('login-password').value.trim();
+      const pass  = document.getElementById('login-password').value;
+
       if (!email || !pass) {
-        alert('Please enter your email and password.');
+        showError('Please enter your email and password.');
         return;
       }
-      // TODO: wire to API
-      console.log('[Antigravity] Login attempt:', email);
+      // TODO: POST to /api/auth/login
+      console.log('[Antigravity] Login:', email);
     }
 
     function handleSignUp() {
       const name  = document.getElementById('signup-name').value.trim();
       const email = document.getElementById('signup-email').value.trim();
+      const pass  = document.getElementById('signup-password').value;
       const file  = fileInput.files[0];
+
       if (!name || !email) {
-        alert('Please fill in your name and email.');
+        showError('Please fill in your name and email.');
+        return;
+      }
+      if (!pass || pass.length < 8) {
+        showError('Password must be at least 8 characters.');
         return;
       }
       if (!file) {
-        alert('Please provide your Access Token File.');
+        showError('Please attach your Access Token File.');
         return;
       }
-      // TODO: wire to API
-      console.log('[Antigravity] Sign up attempt:', name, email, file.name);
+      // TODO: POST to /api/auth/signup
+      console.log('[Antigravity] Sign up:', name, email, file.name);
     }
 
-    /* ── Header button stubs ──────────────── */
-    document.getElementById('btn-user-manual').addEventListener('click', () => {
+    function showError(msg) {
+      alert(msg); // Replace with a toast/inline error in production
+    }
+
+    /* ── Header button stubs ────────────────── */
+    document.getElementById('btn-manual').addEventListener('click', () => {
       console.log('[Antigravity] Opening User Manual…');
+      // e.g. window.open('/docs/manual.pdf', '_blank')
     });
-    document.getElementById('btn-ask-help').addEventListener('click', () => {
+
+    document.getElementById('btn-help').addEventListener('click', () => {
       console.log('[Antigravity] Opening Help…');
+      // e.g. window.open('/support', '_blank')
     });
   </script>
 </body>
