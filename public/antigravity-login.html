@@ -3,320 +3,357 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Antigravity System — Access Portal</title>
-  <meta name="description" content="Secure access portal for the Antigravity System. Log in or sign up to manage your antigravity field controls." />
+  <title>Antigravity — Access Portal</title>
+  <meta name="description" content="Antigravity secure access portal. Log in or sign up with your credentials and access token file." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <style>
-    /* ─── Reset & Base ──────────────────────────────────────────────── */
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    /* ─── RESET & TOKENS ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg-start:       #04051a;
-      --bg-mid:         #080c2e;
-      --bg-end:         #020310;
+      --bg-from:      #0a0f1e;
+      --bg-mid:       #0d1b3e;
+      --bg-to:        #060c18;
 
-      --glass-bg:       rgba(255, 255, 255, 0.045);
-      --glass-border:   rgba(255, 255, 255, 0.10);
-      --glass-shadow:   0 32px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.06);
+      --glass-bg:     rgba(255, 255, 255, 0.055);
+      --glass-border: rgba(255, 255, 255, 0.10);
+      --glass-shadow: 0 32px 80px rgba(0, 0, 0, 0.55), 0 8px 32px rgba(0, 0, 0, 0.35);
 
-      --accent:         #4f8eff;
-      --accent-hover:   #3a76e8;
-      --accent-muted:   rgba(79, 142, 255, 0.15);
-      --text-primary:   #f0f2ff;
-      --text-secondary: #8a90b4;
-      --text-muted:     #4a5070;
-      --input-bg:       rgba(255, 255, 255, 0.06);
-      --input-border:   rgba(255, 255, 255, 0.10);
-      --input-focus:    rgba(79, 142, 255, 0.6);
-      --danger:         #ff5a72;
-      --success:        #3ecf8e;
+      /* ── SOLID matte palette (NO gradients) ── */
+      --clr-primary:   #4f6ef7;     /* solid indigo-blue  */
+      --clr-primary-d: #3a56d4;     /* darker on hover    */
+      --clr-accent:    #7c3aed;     /* solid violet       */
+      --clr-success:   #10b981;     /* solid emerald      */
+      --clr-surface:   #131b35;     /* solid dark surface */
+      --clr-surface2:  #1a2448;     /* slightly lighter   */
+      --clr-border:    #2a3660;     /* solid matte border */
 
-      --font-ui:        'Inter', sans-serif;
-      --font-display:   'Space Grotesk', sans-serif;
+      --txt-primary:   #e8ecf8;
+      --txt-secondary: #8b96bb;
+      --txt-muted:     #5a6585;
 
-      --radius-sm:  6px;
-      --radius-md:  12px;
-      --radius-lg:  20px;
-      --radius-xl:  28px;
+      --radius-sm:  8px;
+      --radius-md:  14px;
+      --radius-lg:  22px;
+      --radius-xl:  32px;
+
+      --font-sans: 'Inter', system-ui, sans-serif;
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+
+      --transition: 0.22s cubic-bezier(.4, 0, .2, 1);
     }
 
     html, body {
       height: 100%;
-      font-family: var(--font-ui);
-      color: var(--text-primary);
-      -webkit-font-smoothing: antialiased;
-    }
-
-    body {
-      min-height: 100vh;
-      background-color: var(--bg-start);
-      background-image:
-        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(30, 50, 140, 0.7) 0%, transparent 70%),
-        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(10, 20, 80, 0.5) 0%, transparent 60%),
-        linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 45%, var(--bg-end) 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      font-family: var(--font-sans);
+      color: var(--txt-primary);
       overflow-x: hidden;
     }
 
-    /* ─── Star field ────────────────────────────────────────────────── */
-    .starfield {
+    body {
+      /* Smooth multi-stop gradient background */
+      background: 
+        radial-gradient(ellipse 80% 60% at 20% 10%, #1a2456 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 90%, #1a0e36 0%, transparent 55%),
+        radial-gradient(ellipse 100% 100% at 50% 50%, #0a0f1e 0%, #060c18 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── SUBTLE BACKGROUND STARS ───────────────────────────── */
+    body::before {
+      content: '';
       position: fixed;
       inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 73% 12%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 42% 68%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 88% 44%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 5%  80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 60% 90%, rgba(255,255,255,0.25) 0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 50%, rgba(255,255,255,0.2) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 95% 75%, rgba(255,255,255,0.3) 0%, transparent 100%);
       pointer-events: none;
       z-index: 0;
-      overflow: hidden;
-    }
-    .star {
-      position: absolute;
-      border-radius: 50%;
-      background: #fff;
-      opacity: 0;
-      animation: twinkle var(--dur, 4s) var(--delay, 0s) infinite ease-in-out;
     }
 
-    @keyframes twinkle {
-      0%, 100% { opacity: 0; transform: scale(0.6); }
-      50%       { opacity: var(--op, 0.7); transform: scale(1); }
-    }
-
-    /* ─── Header / Nav ──────────────────────────────────────────────── */
+    /* ─── HEADER ─────────────────────────────────────────────── */
     header {
       position: relative;
       z-index: 10;
-      width: 100%;
-      max-width: 1200px;
-      padding: 28px 40px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding: 18px 40px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: rgba(10, 15, 30, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
     .logo {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       text-decoration: none;
     }
 
-    .logo-mark {
-      width: 34px;
-      height: 34px;
-      border: 2px solid var(--accent);
-      border-radius: 50%;
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--clr-primary);
+      border-radius: var(--radius-sm);
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
     }
 
-    .logo-mark svg {
-      width: 16px;
-      height: 16px;
+    .logo-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: #fff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .logo-text {
       font-family: var(--font-display);
-      font-size: 17px;
-      font-weight: 600;
-      letter-spacing: 0.01em;
-      color: var(--text-primary);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--txt-primary);
+      letter-spacing: -0.01em;
     }
 
     .logo-text span {
-      color: var(--accent);
+      color: var(--txt-secondary);
+      font-weight: 400;
+      font-size: 0.75rem;
+      display: block;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
 
-    .nav-actions {
+    .header-actions {
       display: flex;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .btn-ghost {
-      font-family: var(--font-ui);
-      font-size: 13.5px;
+    /* SOLID matte header buttons — no gradients */
+    .btn-header {
+      font-family: var(--font-sans);
+      font-size: 0.82rem;
       font-weight: 500;
-      letter-spacing: 0.02em;
-      color: var(--text-secondary);
-      background: transparent;
-      border: 1px solid var(--glass-border);
+      padding: 8px 18px;
       border-radius: var(--radius-sm);
-      padding: 8px 16px;
+      border: none;
       cursor: pointer;
-      transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      transition: background var(--transition), transform var(--transition);
+      letter-spacing: 0.01em;
     }
 
-    .btn-ghost:hover {
-      color: var(--text-primary);
-      border-color: rgba(255, 255, 255, 0.22);
-      background: rgba(255, 255, 255, 0.06);
+    #btn-user-manual {
+      background: var(--clr-surface2);
+      color: var(--txt-primary);
     }
+    #btn-user-manual:hover { background: #22305a; transform: translateY(-1px); }
 
-    /* ─── Page Body ─────────────────────────────────────────────────── */
-    .page-body {
+    #btn-ask-help {
+      background: var(--clr-primary);
+      color: #fff;
+    }
+    #btn-ask-help:hover { background: var(--clr-primary-d); transform: translateY(-1px); }
+
+    /* ─── MAIN CONTENT AREA ──────────────────────────────────── */
+    main {
       position: relative;
-      z-index: 10;
+      z-index: 1;
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 100%;
-      padding: 24px 20px 60px;
+      padding: 48px 24px;
     }
 
-    /* ─── Glass Panel ───────────────────────────────────────────────── */
+    /* ─── LEVITATING GLASSMORPHISM PANEL ─────────────────────── */
     .glass-panel {
       width: 100%;
       max-width: 440px;
       background: var(--glass-bg);
+      backdrop-filter: blur(28px) saturate(1.4);
+      -webkit-backdrop-filter: blur(28px) saturate(1.4);
       border: 1px solid var(--glass-border);
       border-radius: var(--radius-xl);
-      backdrop-filter: blur(28px) saturate(140%);
-      -webkit-backdrop-filter: blur(28px) saturate(140%);
       box-shadow: var(--glass-shadow);
-      padding: 36px 36px 40px;
-      animation: levitate 6s ease-in-out infinite;
+      padding: 40px 40px 36px;
+      animation: levitate 5s ease-in-out infinite;
     }
 
     @keyframes levitate {
-      0%   { transform: translateY(0px); }
-      50%  { transform: translateY(-12px); }
-      100% { transform: translateY(0px); }
+      0%   { transform: translateY(0px);   }
+      30%  { transform: translateY(-12px);  }
+      60%  { transform: translateY(-6px);   }
+      80%  { transform: translateY(-14px);  }
+      100% { transform: translateY(0px);   }
     }
 
-    /* ─── Panel Header ──────────────────────────────────────────────── */
-    .panel-header {
+    /* ─── PANEL HEADER ───────────────────────────────────────── */
+    .panel-brand {
       text-align: center;
       margin-bottom: 28px;
     }
 
-    .panel-eyebrow {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 8px;
+    .panel-brand-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--clr-primary);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 14px;
+    }
+
+    .panel-brand-icon svg {
+      width: 28px;
+      height: 28px;
+      fill: none;
+      stroke: #fff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .panel-title {
       font-family: var(--font-display);
-      font-size: 26px;
+      font-size: 1.55rem;
       font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.01em;
+      color: var(--txt-primary);
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
     }
 
     .panel-subtitle {
-      font-size: 13.5px;
-      color: var(--text-secondary);
-      margin-top: 6px;
-      line-height: 1.5;
+      font-size: 0.85rem;
+      color: var(--txt-secondary);
+      font-weight: 400;
     }
 
-    /* ─── Tabs ──────────────────────────────────────────────────────── */
-    .tab-bar {
+    /* ─── TOGGLE ─────────────────────────────────────────────── */
+    .view-toggle {
       display: flex;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--glass-border);
+      background: var(--clr-surface);
       border-radius: var(--radius-md);
       padding: 4px;
       margin-bottom: 28px;
+      border: 1px solid var(--clr-border);
     }
 
-    .tab-btn {
+    .toggle-btn {
       flex: 1;
-      font-family: var(--font-ui);
-      font-size: 13.5px;
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
       font-weight: 500;
-      letter-spacing: 0.02em;
-      color: var(--text-muted);
-      background: transparent;
-      border: none;
-      border-radius: 9px;
       padding: 9px 0;
+      border: none;
+      border-radius: calc(var(--radius-md) - 2px);
       cursor: pointer;
-      transition: color 0.25s ease, background 0.25s ease;
+      transition: background var(--transition), color var(--transition);
+      background: transparent;
+      color: var(--txt-muted);
     }
 
-    .tab-btn.active {
-      background: var(--accent);
+    .toggle-btn.active {
+      background: var(--clr-primary);  /* solid color, no gradient */
       color: #fff;
     }
 
-    .tab-btn:not(.active):hover {
-      color: var(--text-secondary);
-      background: rgba(255, 255, 255, 0.05);
+    .toggle-btn:not(.active):hover {
+      color: var(--txt-secondary);
+      background: rgba(255,255,255,0.04);
     }
 
-    /* ─── Form Views ────────────────────────────────────────────────── */
-    .form-view {
+    /* ─── VIEWS ──────────────────────────────────────────────── */
+    .view {
       display: none;
       flex-direction: column;
       gap: 16px;
-      animation: fadeSlideIn 0.3s ease forwards;
     }
+    .view.active { display: flex; }
 
-    .form-view.visible {
-      display: flex;
-    }
-
-    @keyframes fadeSlideIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ─── Input Fields ──────────────────────────────────────────────── */
-    .field-group {
+    /* ─── FORM FIELDS ────────────────────────────────────────── */
+    .field {
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
 
-    .field-label {
-      font-size: 12px;
+    label {
+      font-size: 0.8rem;
       font-weight: 500;
-      letter-spacing: 0.06em;
+      color: var(--txt-secondary);
+      letter-spacing: 0.03em;
       text-transform: uppercase;
-      color: var(--text-secondary);
     }
 
-    .field-input {
-      font-family: var(--font-ui);
-      font-size: 14px;
-      font-weight: 400;
-      color: var(--text-primary);
-      background: var(--input-bg);
-      border: 1px solid var(--input-border);
+    /* SOLID matte input — absolutely no gradient */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      color: var(--txt-primary);
+      background: var(--clr-surface);       /* solid matte */
+      border: 1px solid var(--clr-border);  /* solid matte border */
       border-radius: var(--radius-sm);
       padding: 12px 14px;
       outline: none;
+      transition: border-color var(--transition), background var(--transition);
       width: 100%;
-      transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-      -webkit-appearance: none;
     }
 
-    .field-input::placeholder {
-      color: var(--text-muted);
+    input::placeholder { color: var(--txt-muted); }
+
+    input:focus {
+      border-color: var(--clr-primary);     /* solid color on focus */
+      background: var(--clr-surface2);      /* solid matte on focus */
     }
 
-    .field-input:focus {
-      border-color: var(--accent);
-      background: rgba(79, 142, 255, 0.06);
-      box-shadow: 0 0 0 3px rgba(79, 142, 255, 0.15);
+    /* ─── SUBMIT BUTTONS ─────────────────────────────────────── */
+    .btn-submit {
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+      background: var(--clr-primary);   /* solid color — NO gradient */
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 13px 0;
+      width: 100%;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+      margin-top: 6px;
     }
 
-    /* ─── Drag & Drop Zone ──────────────────────────────────────────── */
+    .btn-submit:hover {
+      background: var(--clr-primary-d);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(79, 110, 247, 0.35);
+    }
+
+    .btn-submit:active { transform: translateY(0); }
+
+    /* ─── DRAG & DROP ZONE ───────────────────────────────────── */
     .drop-zone {
-      border: 2px dashed var(--input-border);
+      border: 2px dashed var(--clr-border);  /* solid dashed — no gradient */
       border-radius: var(--radius-md);
       padding: 28px 20px;
       display: flex;
@@ -324,78 +361,14 @@
       align-items: center;
       gap: 10px;
       cursor: pointer;
-      background: var(--input-bg);
-      transition: border-color 0.2s ease, background 0.2s ease;
+      transition:
+        border-color var(--transition),
+        background var(--transition);
+      background: transparent;
       text-align: center;
       position: relative;
     }
 
-    .drop-zone.drag-over {
-      border-color: var(--accent);
-      border-style: solid;
-      background: var(--accent-muted);
-    }
-
-    .drop-zone.file-accepted {
-      border-color: var(--success);
-      border-style: solid;
-      background: rgba(62, 207, 142, 0.08);
-    }
-
-    .drop-zone-icon {
-      width: 40px;
-      height: 40px;
-      color: var(--text-muted);
-      transition: color 0.2s ease;
-    }
-
-    .drop-zone.drag-over .drop-zone-icon,
-    .drop-zone:hover .drop-zone-icon {
-      color: var(--accent);
-    }
-
-    .drop-zone.file-accepted .drop-zone-icon {
-      color: var(--success);
-    }
-
-    .drop-zone-label {
-      font-size: 13.5px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      transition: color 0.2s ease;
-    }
-
-    .drop-zone.drag-over .drop-zone-label {
-      color: var(--accent);
-    }
-
-    .drop-zone.file-accepted .drop-zone-label {
-      color: var(--success);
-    }
-
-    .drop-zone-hint {
-      font-size: 11.5px;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }
-
-    .drop-zone-filename {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--success);
-      display: none;
-      word-break: break-all;
-    }
-
-    .drop-zone.file-accepted .drop-zone-filename {
-      display: block;
-    }
-
-    .drop-zone.file-accepted .drop-zone-hint {
-      display: none;
-    }
-
-    /* hidden file input */
     .drop-zone input[type="file"] {
       position: absolute;
       inset: 0;
@@ -403,387 +376,469 @@
       cursor: pointer;
     }
 
-    /* ─── Primary Button ────────────────────────────────────────────── */
-    .btn-primary {
-      font-family: var(--font-ui);
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      color: #fff;
-      background: var(--accent);
-      border: none;
+    .drop-zone-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--clr-surface2);   /* solid matte */
       border-radius: var(--radius-sm);
-      padding: 13px 0;
-      width: 100%;
-      cursor: pointer;
-      margin-top: 4px;
-      transition: background 0.2s ease, transform 0.12s ease, box-shadow 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition);
     }
 
-    .btn-primary:hover {
-      background: var(--accent-hover);
-      box-shadow: 0 4px 20px rgba(79, 142, 255, 0.35);
+    .drop-zone-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: var(--clr-primary);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
-    .btn-primary:active {
-      transform: scale(0.985);
+    .drop-zone-label {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--txt-primary);
     }
 
-    /* ─── Divider ────────────────────────────────────────────────────── */
-    .form-note {
-      font-size: 12px;
-      color: var(--text-muted);
-      text-align: center;
-      margin-top: 4px;
+    .drop-zone-sub {
+      font-size: 0.78rem;
+      color: var(--txt-muted);
     }
 
-    .form-note a {
-      color: var(--accent);
-      text-decoration: none;
+    .drop-zone-filename {
+      font-size: 0.8rem;
       font-weight: 500;
+      color: var(--clr-success);
+      display: none;
     }
 
-    .form-note a:hover {
-      text-decoration: underline;
+    /* DRAG-OVER STATE — solid background, no gradient */
+    .drop-zone.drag-over {
+      border-color: var(--clr-primary);
+      background: var(--clr-surface2);  /* solid matte highlight */
     }
 
-    /* ─── Footer ─────────────────────────────────────────────────────── */
+    .drop-zone.drag-over .drop-zone-icon {
+      background: var(--clr-primary);
+    }
+
+    .drop-zone.drag-over .drop-zone-icon svg {
+      stroke: #fff;
+    }
+
+    .drop-zone.drag-over .drop-zone-label {
+      color: var(--txt-primary);
+    }
+
+    /* File accepted state */
+    .drop-zone.file-accepted {
+      border-color: var(--clr-success);
+      background: rgba(16, 185, 129, 0.07);  /* very subtle solid tint */
+    }
+
+    /* ─── DIVIDER ─────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--clr-border);   /* solid color */
+      margin: 4px 0;
+    }
+
+    /* ─── SECTION LABEL ───────────────────────────────────────── */
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--txt-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 2px;
+    }
+
+    /* ─── FOOTER ─────────────────────────────────────────────── */
     footer {
       position: relative;
       z-index: 10;
-      width: 100%;
-      max-width: 1200px;
-      padding: 18px 40px 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 14px 40px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      background: rgba(10, 15, 30, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .footer-copy {
-      font-size: 12px;
-      color: var(--text-muted);
-      letter-spacing: 0.02em;
+      font-size: 0.78rem;
+      color: var(--txt-muted);
     }
 
-    .footer-status {
+    .field-status {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 12px;
-      color: var(--text-muted);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      background: var(--clr-surface);    /* solid matte pill */
+      border: 1px solid var(--clr-border);
+      border-radius: 100px;
+      padding: 5px 14px 5px 10px;
     }
 
     .status-dot {
-      width: 7px;
-      height: 7px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      background: var(--accent);
+      background: var(--clr-success);    /* solid green */
       flex-shrink: 0;
-      animation: pulse 2.8s ease-in-out infinite;
+      animation: pulse-dot 2.4s ease-in-out infinite;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1;   box-shadow: 0 0 0 0 rgba(79, 142, 255, 0.5); }
-      50%       { opacity: 0.7; box-shadow: 0 0 0 5px rgba(79, 142, 255, 0); }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
     }
 
-    /* ─── Responsive ─────────────────────────────────────────────────── */
-    @media (max-width: 540px) {
-      header, footer         { padding-left: 20px; padding-right: 20px; }
-      .glass-panel           { padding: 28px 22px 32px; }
-      .logo-text             { font-size: 15px; }
-      .nav-actions .btn-ghost:first-child { display: none; }
+    .status-text {
+      font-size: 0.76rem;
+      font-weight: 500;
+      color: var(--txt-secondary);
+      letter-spacing: 0.02em;
+    }
+
+    .status-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--clr-success);
+      background: rgba(16, 185, 129, 0.12);  /* solid tint */
+      border-radius: 4px;
+      padding: 1px 6px;
+    }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      header { padding: 14px 20px; }
+      footer  { padding: 12px 20px; }
+      .glass-panel { padding: 30px 24px 28px; }
+      .header-actions .btn-header:first-child { display: none; }
+      .panel-title { font-size: 1.35rem; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ── Star field ─────────────────────────────────────────────────── -->
-  <div class="starfield" id="starfield" aria-hidden="true"></div>
-
-  <!-- ── Header ────────────────────────────────────────────────────── -->
+  <!-- ═══════════════ HEADER ═══════════════ -->
   <header>
-    <a href="#" class="logo" aria-label="Antigravity Project Home">
-      <div class="logo-mark" aria-hidden="true">
-        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="8" cy="8" r="3" fill="#4f8eff"/>
-          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.22 3.22l1.42 1.42M11.36 11.36l1.42 1.42M11.36 4.64l-1.42 1.42M4.64 11.36l-1.42 1.42"
-                stroke="#4f8eff" stroke-width="1.4" stroke-linecap="round"/>
+    <a class="logo" href="#" id="logo-link" aria-label="Antigravity Home">
+      <div class="logo-icon" aria-hidden="true">
+        <!-- Orbit/atom icon -->
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(0 12 12)"/>
+          <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/>
+          <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/>
         </svg>
       </div>
-      <span class="logo-text">Antigravity<span>.</span></span>
+      <div class="logo-text">
+        Antigravity
+        <span>System Access Portal</span>
+      </div>
     </a>
 
-    <nav class="nav-actions" aria-label="Header navigation">
-      <button class="btn-ghost" id="btn-manual" type="button">System Manual</button>
-      <button class="btn-ghost" id="btn-help"   type="button">Ask for Help</button>
-    </nav>
+    <div class="header-actions">
+      <button class="btn-header" id="btn-user-manual" type="button">User Manual</button>
+      <button class="btn-header" id="btn-ask-help"    type="button">Ask for Help</button>
+    </div>
   </header>
 
-  <!-- ── Page Body ─────────────────────────────────────────────────── -->
-  <main class="page-body">
-    <div class="glass-panel" role="dialog" aria-label="Antigravity System Access Panel">
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main>
+    <div class="glass-panel" id="glass-panel" role="region" aria-label="Authentication Panel">
 
-      <!-- Panel Header -->
-      <div class="panel-header">
-        <p class="panel-eyebrow">Secure Access</p>
-        <h1 class="panel-title">Antigravity System</h1>
-        <p class="panel-subtitle">Authenticate to manage your antigravity field controls.</p>
+      <!-- Panel branding -->
+      <div class="panel-brand">
+        <div class="panel-brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"/>
+            <ellipse cx="12" cy="12" rx="10" ry="4"/>
+            <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/>
+            <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/>
+          </svg>
+        </div>
+        <h1 class="panel-title">Welcome Back</h1>
+        <p class="panel-subtitle">Antigravity — Secure Access Portal</p>
       </div>
 
-      <!-- Tabs -->
-      <div class="tab-bar" role="tablist" aria-label="Authentication mode">
-        <button class="tab-btn active" id="tab-login"  role="tab" aria-selected="true"  aria-controls="view-login"  type="button">Log In</button>
-        <button class="tab-btn"        id="tab-signup" role="tab" aria-selected="false" aria-controls="view-signup" type="button">Sign Up</button>
+      <!-- View toggle -->
+      <div class="view-toggle" role="tablist" aria-label="Authentication mode">
+        <button
+          class="toggle-btn active"
+          id="tab-login"
+          role="tab"
+          aria-selected="true"
+          aria-controls="view-login"
+          type="button"
+          onclick="switchView('login')"
+        >Log In</button>
+        <button
+          class="toggle-btn"
+          id="tab-signup"
+          role="tab"
+          aria-selected="false"
+          aria-controls="view-signup"
+          type="button"
+          onclick="switchView('signup')"
+        >Sign Up</button>
       </div>
 
-      <!-- ── Log In View ── -->
-      <div class="form-view visible" id="view-login" role="tabpanel" aria-labelledby="tab-login">
-        <div class="field-group">
-          <label class="field-label" for="login-email">Email</label>
-          <input class="field-input" id="login-email" type="email" placeholder="commander@antigravity.io" autocomplete="email" />
+      <!-- ─── LOGIN VIEW ─────────────────────────── -->
+      <div class="view active" id="view-login" role="tabpanel" aria-labelledby="tab-login">
+
+        <div class="field">
+          <label for="login-email">Email Address</label>
+          <input
+            type="email"
+            id="login-email"
+            name="login-email"
+            placeholder="you@example.com"
+            autocomplete="email"
+            required
+          />
         </div>
 
-        <div class="field-group">
-          <label class="field-label" for="login-password">Password</label>
-          <input class="field-input" id="login-password" type="password" placeholder="••••••••••••" autocomplete="current-password" />
+        <div class="field">
+          <label for="login-password">Password</label>
+          <input
+            type="password"
+            id="login-password"
+            name="login-password"
+            placeholder="••••••••••"
+            autocomplete="current-password"
+            required
+          />
         </div>
 
-        <button class="btn-primary" id="btn-login" type="button">Log In</button>
+        <button class="btn-submit" id="btn-login" type="button" onclick="handleLogin()">
+          Log In
+        </button>
 
-        <p class="form-note">Don't have access? <a href="#" id="note-goto-signup">Create an account →</a></p>
       </div>
 
-      <!-- ── Sign Up View ── -->
-      <div class="form-view" id="view-signup" role="tabpanel" aria-labelledby="tab-signup">
-        <div class="field-group">
-          <label class="field-label" for="signup-name">Full Name</label>
-          <input class="field-input" id="signup-name" type="text" placeholder="Dr. Eleanor Voss" autocomplete="name" />
+      <!-- ─── SIGN UP VIEW ───────────────────────── -->
+      <div class="view" id="view-signup" role="tabpanel" aria-labelledby="tab-signup">
+
+        <div class="field">
+          <label for="signup-name">Full Name</label>
+          <input
+            type="text"
+            id="signup-name"
+            name="signup-name"
+            placeholder="Ada Lovelace"
+            autocomplete="name"
+            required
+          />
         </div>
 
-        <div class="field-group">
-          <label class="field-label" for="signup-email">Email</label>
-          <input class="field-input" id="signup-email" type="email" placeholder="eleanor@antigravity.io" autocomplete="email" />
+        <div class="field">
+          <label for="signup-email">Email Address</label>
+          <input
+            type="email"
+            id="signup-email"
+            name="signup-email"
+            placeholder="you@example.com"
+            autocomplete="email"
+            required
+          />
         </div>
 
-        <div class="field-group">
-          <label class="field-label" for="drop-zone-input">Access Token File</label>
-          <!-- Drop Zone -->
-          <div class="drop-zone" id="drop-zone" aria-label="Drag and drop your access token file here">
-            <input type="file" id="drop-zone-input" accept=".token,.key,.json,.txt" aria-label="Select access token file" />
+        <div class="divider"></div>
 
-            <!-- Icon -->
-            <svg class="drop-zone-icon" id="drop-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect x="8" y="10" width="24" height="28" rx="4" stroke="currentColor" stroke-width="1.8"/>
-              <path d="M14 18h12M14 24h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              <path d="M24 6v6a2 2 0 002 2h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              <path d="M24 6H12a4 4 0 00-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- Drag & Drop Zone -->
+        <p class="section-label">Access Token File</p>
+
+        <div
+          class="drop-zone"
+          id="drop-zone"
+          role="button"
+          tabindex="0"
+          aria-label="Drag and drop your access token file here, or click to browse"
+        >
+          <!-- Hidden file input for click-to-browse -->
+          <input
+            type="file"
+            id="token-file-input"
+            name="access-token"
+            accept=".token,.json,.key,.pem,.txt"
+            tabindex="-1"
+            aria-hidden="true"
+          />
+
+          <div class="drop-zone-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
-
-            <!-- Check icon (shown when file accepted) - hidden by default via JS -->
-            <svg class="drop-zone-icon" id="drop-icon-check" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:none;">
-              <circle cx="20" cy="20" r="14" stroke="currentColor" stroke-width="1.8"/>
-              <path d="M13 20l5 5 9-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-
-            <span class="drop-zone-label" id="drop-label">Drag & Drop your Access Token File here</span>
-            <span class="drop-zone-hint" id="drop-hint">or click to browse — .token, .key, .json, .txt</span>
-            <span class="drop-zone-filename" id="drop-filename"></span>
           </div>
+
+          <p class="drop-zone-label">Drag &amp; Drop your Access Token File here</p>
+          <p class="drop-zone-sub">or click to browse — .token .json .key .pem</p>
+          <p class="drop-zone-filename" id="drop-zone-filename" aria-live="polite"></p>
         </div>
 
-        <button class="btn-primary" id="btn-signup" type="button">Create Account</button>
+        <button class="btn-submit" id="btn-signup" type="button" onclick="handleSignUp()">
+          Create Account
+        </button>
 
-        <p class="form-note">Already have access? <a href="#" id="note-goto-login">Log in →</a></p>
       </div>
+      <!-- end views -->
 
     </div>
+    <!-- end glass-panel -->
   </main>
 
-  <!-- ── Footer ─────────────────────────────────────────────────────── -->
+  <!-- ═══════════════ FOOTER ═══════════════ -->
   <footer>
-    <p class="footer-copy">© 2026 Antigravity Systems Inc. All rights reserved.</p>
-    <div class="footer-status" aria-live="polite">
+    <p class="footer-copy" id="footer-copyright">
+      &copy; <span id="footer-year"></span> Antigravity Systems. All rights reserved.
+    </p>
+
+    <div class="field-status" id="field-status" aria-label="Antigravity Field Status">
       <div class="status-dot" aria-hidden="true"></div>
-      <span>Antigravity Field: Standby</span>
+      <span class="status-text">Antigravity Field Status</span>
+      <span class="status-badge" id="status-badge">NOMINAL</span>
     </div>
   </footer>
 
-  <!-- ── JavaScript ─────────────────────────────────────────────────── -->
+  <!-- ═══════════════ JAVASCRIPT ═══════════════ -->
   <script>
-    /* ── Star Field Generator ─────────────────────────────────────── */
-    (function generateStars() {
-      const field = document.getElementById('starfield');
-      const count = 180;
-      const fragment = document.createDocumentFragment();
+    'use strict';
 
-      for (let i = 0; i < count; i++) {
-        const star = document.createElement('div');
-        star.className = 'star';
+    /* ── Year ──────────────────────────────── */
+    document.getElementById('footer-year').textContent = new Date().getFullYear();
 
-        const size    = Math.random() * 2.2 + 0.6;
-        const x       = Math.random() * 100;
-        const y       = Math.random() * 100;
-        const dur     = (Math.random() * 5 + 3).toFixed(2);
-        const delay   = (Math.random() * 8).toFixed(2);
-        const opacity = (Math.random() * 0.5 + 0.3).toFixed(2);
+    /* ── View Toggle ───────────────────────── */
+    function switchView(view) {
+      const isLogin  = view === 'login';
+      const tabLogin = document.getElementById('tab-login');
+      const tabSign  = document.getElementById('tab-signup');
+      const vLogin   = document.getElementById('view-login');
+      const vSign    = document.getElementById('view-signup');
+      const title    = document.querySelector('.panel-title');
+      const sub      = document.querySelector('.panel-subtitle');
 
-        star.style.cssText =
-          `width:${size}px;height:${size}px;` +
-          `left:${x}%;top:${y}%;` +
-          `--dur:${dur}s;--delay:${delay}s;--op:${opacity};`;
+      tabLogin.classList.toggle('active', isLogin);
+      tabSign.classList.toggle('active', !isLogin);
+      tabLogin.setAttribute('aria-selected', String(isLogin));
+      tabSign.setAttribute('aria-selected',  String(!isLogin));
 
-        fragment.appendChild(star);
-      }
+      vLogin.classList.toggle('active', isLogin);
+      vSign.classList.toggle('active', !isLogin);
 
-      field.appendChild(fragment);
-    })();
-
-    /* ── Tab Switching ────────────────────────────────────────────── */
-    const tabLogin   = document.getElementById('tab-login');
-    const tabSignup  = document.getElementById('tab-signup');
-    const viewLogin  = document.getElementById('view-login');
-    const viewSignup = document.getElementById('view-signup');
-
-    function switchToLogin() {
-      tabLogin.classList.add('active');
-      tabSignup.classList.remove('active');
-      tabLogin.setAttribute('aria-selected', 'true');
-      tabSignup.setAttribute('aria-selected', 'false');
-
-      viewLogin.classList.add('visible');
-      viewSignup.classList.remove('visible');
+      title.textContent = isLogin ? 'Welcome Back'     : 'Create Account';
+      sub.textContent   = isLogin
+        ? 'Antigravity — Secure Access Portal'
+        : 'Join the Antigravity Network';
     }
 
-    function switchToSignup() {
-      tabSignup.classList.add('active');
-      tabLogin.classList.remove('active');
-      tabSignup.setAttribute('aria-selected', 'true');
-      tabLogin.setAttribute('aria-selected', 'false');
-
-      viewSignup.classList.add('visible');
-      viewLogin.classList.remove('visible');
-    }
-
-    tabLogin.addEventListener('click', switchToLogin);
-    tabSignup.addEventListener('click', switchToSignup);
-
-    /* Cross-links inside form notes */
-    document.getElementById('note-goto-signup').addEventListener('click', (e) => {
-      e.preventDefault();
-      switchToSignup();
-    });
-    document.getElementById('note-goto-login').addEventListener('click', (e) => {
-      e.preventDefault();
-      switchToLogin();
-    });
-
-    /* ── Drag & Drop Zone ─────────────────────────────────────────── */
+    /* ── Drag & Drop ───────────────────────── */
     const dropZone     = document.getElementById('drop-zone');
-    const dropInput    = document.getElementById('drop-zone-input');
-    const dropLabel    = document.getElementById('drop-label');
-    const dropHint     = document.getElementById('drop-hint');
-    const dropFilename = document.getElementById('drop-filename');
-    const dropIcon     = document.getElementById('drop-icon');
-    const dropIconCheck = document.getElementById('drop-icon-check');
+    const fileInput    = document.getElementById('token-file-input');
+    const fileLabel    = document.getElementById('drop-zone-filename');
+    const dropSubText  = dropZone.querySelector('.drop-zone-sub');
+    const dropMainText = dropZone.querySelector('.drop-zone-label');
 
-    let dragCounter = 0; // track nested drag events
-
-    function applyFileAccepted(filename) {
+    function setAccepted(file) {
       dropZone.classList.remove('drag-over');
       dropZone.classList.add('file-accepted');
-      dropLabel.textContent  = 'Token File Loaded';
-      dropFilename.textContent = filename;
-      dropIcon.style.display = 'none';
-      dropIconCheck.style.display = '';
+      fileLabel.style.display  = 'block';
+      fileLabel.textContent    = `✓  ${file.name}  (${formatBytes(file.size)})`;
+      dropMainText.textContent = 'Token file attached';
+      dropSubText.textContent  = 'Click to replace';
     }
 
-    function resetDropZone() {
-      dropZone.classList.remove('drag-over', 'file-accepted');
-      dropLabel.textContent  = 'Drag & Drop your Access Token File here';
-      dropFilename.textContent = '';
-      dropIcon.style.display = '';
-      dropIconCheck.style.display = 'none';
+    function formatBytes(bytes) {
+      if (bytes < 1024)       return bytes + ' B';
+      if (bytes < 1048576)    return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
     }
 
+    /* Drag events */
     dropZone.addEventListener('dragenter', (e) => {
       e.preventDefault();
-      dragCounter++;
-      if (!dropZone.classList.contains('file-accepted')) {
-        dropZone.classList.add('drag-over');
-      }
-    });
-
-    dropZone.addEventListener('dragleave', (e) => {
-      dragCounter--;
-      if (dragCounter === 0) {
-        if (!dropZone.classList.contains('file-accepted')) {
-          dropZone.classList.remove('drag-over');
-        }
-      }
+      dropZone.classList.add('drag-over');
     });
 
     dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault(); // allow drop
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+      // Only remove if cursor left the zone entirely
+      if (!dropZone.contains(e.relatedTarget)) {
+        dropZone.classList.remove('drag-over');
+      }
     });
 
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
-      dragCounter = 0;
+      dropZone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) setAccepted(file);
+    });
 
-      const files = e.dataTransfer.files;
-      if (files && files.length > 0) {
-        applyFileAccepted(files[0].name);
+    /* Click to browse */
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (file) setAccepted(file);
+    });
+
+    /* Keyboard accessibility */
+    dropZone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        fileInput.click();
       }
     });
 
-    /* File input (click-to-browse) */
-    dropInput.addEventListener('change', () => {
-      if (dropInput.files && dropInput.files.length > 0) {
-        applyFileAccepted(dropInput.files[0].name);
-      }
-    });
-
-    /* Click anywhere on zone resets if already accepted and re-opens dialog */
-    dropZone.addEventListener('click', () => {
-      // The hidden <input> inside handles the click natively via propagation
-    });
-
-    /* ── Nav button stubs ─────────────────────────────────────────── */
-    document.getElementById('btn-manual').addEventListener('click', () => {
-      alert('System Manual — documentation launching soon.');
-    });
-    document.getElementById('btn-help').addEventListener('click', () => {
-      alert('Support portal — routing your request to Mission Control.');
-    });
-
-    /* ── Form submit stubs ────────────────────────────────────────── */
-    document.getElementById('btn-login').addEventListener('click', () => {
-      const email    = document.getElementById('login-email').value.trim();
-      const password = document.getElementById('login-password').value;
-      if (!email || !password) {
-        alert('Please fill in all fields before logging in.');
+    /* ── Handlers (stub) ────────────────────── */
+    function handleLogin() {
+      const email = document.getElementById('login-email').value.trim();
+      const pass  = document.getElementById('login-password').value.trim();
+      if (!email || !pass) {
+        alert('Please enter your email and password.');
         return;
       }
-      alert(`Authenticating ${email}…\n(Wire this to your auth backend.)`);
-    });
+      // TODO: wire to API
+      console.log('[Antigravity] Login attempt:', email);
+    }
 
-    document.getElementById('btn-signup').addEventListener('click', () => {
+    function handleSignUp() {
       const name  = document.getElementById('signup-name').value.trim();
       const email = document.getElementById('signup-email').value.trim();
-      const hasFile = dropZone.classList.contains('file-accepted');
+      const file  = fileInput.files[0];
       if (!name || !email) {
-        alert('Please enter your name and email.');
+        alert('Please fill in your name and email.');
         return;
       }
-      if (!hasFile) {
-        alert('Please upload your Access Token File to proceed.');
+      if (!file) {
+        alert('Please provide your Access Token File.');
         return;
       }
-      alert(`Creating account for ${name} (${email})…\n(Wire this to your auth backend.)`);
+      // TODO: wire to API
+      console.log('[Antigravity] Sign up attempt:', name, email, file.name);
+    }
+
+    /* ── Header button stubs ──────────────── */
+    document.getElementById('btn-user-manual').addEventListener('click', () => {
+      console.log('[Antigravity] Opening User Manual…');
+    });
+    document.getElementById('btn-ask-help').addEventListener('click', () => {
+      console.log('[Antigravity] Opening Help…');
     });
   </script>
 </body>
