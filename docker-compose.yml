@@ -1,0 +1,8 @@
+services:
+  sol-nextjs:
+    build: .
+    container_name: sol-nextjs
+    restart: unless-stopped
+    env_file: .env.production
+    ports:
+      - "3000:3000"
