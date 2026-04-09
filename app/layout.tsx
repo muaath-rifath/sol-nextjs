@@ -1,37 +1,21 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { IBM_Plex_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  weight: ["400", "500"],
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "Zynix Sol — AI & IoT Home Automation",
-  description:
-    "Control your smart home with AI-powered automation. Manage lighting, climate, security, and energy from a single intelligent platform.",
-  keywords: [
-    "smart home",
-    "home automation",
-    "AI",
-    "IoT",
-    "building automation",
-    "energy management",
-  ],
-  openGraph: {
-    title: "Zynix Sol — AI & IoT Home Automation",
-    description:
-      "Control your smart home with AI-powered automation. Manage lighting, climate, security, and energy from a single intelligent platform.",
-    type: "website",
-  },
+  title: "Sol",
+  description: "Sol smart home control",
 };
 
 export default function RootLayout({
@@ -42,7 +26,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${outfit.variable} ${inter.variable} h-full antialiased`}
+      className={`${jakarta.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
