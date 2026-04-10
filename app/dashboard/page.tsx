@@ -64,6 +64,8 @@ function decodeNotice(code: string | undefined): string | null {
       return "Invitation cancelled."
     case "invite-accepted":
       return "Invitation accepted. Welcome to your new home."
+    case "home-deleted":
+      return "Home deleted."
     default:
       return code
   }
@@ -130,6 +132,21 @@ async function cancelInvitationAction(formData: FormData) {
   try {
     await solCore.homes.cancelInvitation(homeID, invitationID)
     redirect(buildDashboardHref({ home: homeID, notice: "invite-cancelled" }))
+  } catch (error) {
+    unstable_rethrow(error)
+    redirect(buildDashboardHref({ home: homeID, error: errorMessage(error) }))
+  }
+}
+
+async function deleteHomeAction(formData: FormData) {
+  "use server"
+  const homeID = String(formData.get("home_id") ?? "").trim()
+  if (!homeID) {
+    redirect(buildDashboardHref({ error: "Missing home ID" }))
+  }
+  try {
+    await solCore.homes.delete(homeID)
+    redirect(buildDashboardHref({ notice: "home-deleted" }))
   } catch (error) {
     unstable_rethrow(error)
     redirect(buildDashboardHref({ home: homeID, error: errorMessage(error) }))
@@ -347,12 +364,27 @@ export default async function DashboardPage({
             ) : selectedHome ? (
               <>
                 <div className="rounded-2xl border border-stone-200 bg-white px-4 py-4">
-                  <h2 className="text-2xl font-semibold tracking-tight text-stone-900">
-                    {selectedHome.name}
-                  </h2>
-                  <p className="mt-1 text-sm text-stone-600">
-                    Role: {selectedHome.my_role ?? "member"} · {selectedHome.member_count ?? 0} members
-                  </p>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-2xl font-semibold tracking-tight text-stone-900">
+                        {selectedHome.name}
+                      </h2>
+                      <p className="mt-1 text-sm text-stone-600">
+                        Role: {selectedHome.my_role ?? "member"} · {selectedHome.member_count ?? 0} members
+                      </p>
+                    </div>
+                    {selectedHome.my_role === "owner" ? (
+                      <form action={deleteHomeAction}>
+                        <input type="hidden" name="home_id" value={selectedHome.id} />
+                        <button
+                          type="submit"
+                          className="rounded-full border border-rose-300 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:border-rose-500 hover:bg-rose-50"
+                        >
+                          Delete home
+                        </button>
+                      </form>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="grid gap-4 xl:grid-cols-2">

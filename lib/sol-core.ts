@@ -180,6 +180,8 @@ export const solCore = {
       solFetch(`/api/v1/homes/${homeID}/invitations/${invitationID}`, {
         method: "DELETE",
       }).then((r) => jsonOrNull(r)),
+    delete: (id: string) =>
+      solFetch(`/api/v1/homes/${id}`, { method: "DELETE" }).then((r) => jsonOrNull(r)),
     transferOwnership: (homeID: string, userID: string) =>
       solFetch(`/api/v1/homes/${homeID}/transfer-ownership`, {
         method: "POST",
