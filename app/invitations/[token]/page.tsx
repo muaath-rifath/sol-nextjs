@@ -1,7 +1,7 @@
 import { auth, signIn } from "@/auth"
 import { solCore } from "@/lib/sol-core"
 import Link from "next/link"
-import { redirect } from "next/navigation"
+import { redirect, unstable_rethrow } from "next/navigation"
 
 type InvitationPageSearchParams = Promise<{
   notice?: string
@@ -58,6 +58,7 @@ export default async function InvitationPage({
       await solCore.invitations.accept(token)
       redirect("/dashboard?notice=invite-accepted")
     } catch (error) {
+      unstable_rethrow(error)
       redirect(invitationHref(token, { error: errorMessage(error) }))
     }
   }
@@ -68,6 +69,7 @@ export default async function InvitationPage({
       await solCore.invitations.declinePublic(token)
       redirect(invitationHref(token, { notice: "Invitation declined" }))
     } catch (error) {
+      unstable_rethrow(error)
       redirect(invitationHref(token, { error: errorMessage(error) }))
     }
   }

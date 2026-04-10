@@ -8,7 +8,7 @@ import {
   solCore,
 } from "@/lib/sol-core"
 import Link from "next/link"
-import { redirect } from "next/navigation"
+import { redirect, unstable_rethrow } from "next/navigation"
 
 type RawSearchParams = Record<string, string | string[] | undefined>
 type DashboardQuery = {
@@ -85,6 +85,7 @@ async function createHomeAction(formData: FormData) {
       }),
     )
   } catch (error) {
+    unstable_rethrow(error)
     redirect(buildDashboardHref({ error: errorMessage(error) }))
   }
 }
@@ -107,6 +108,7 @@ async function inviteByEmailAction(formData: FormData) {
     await solCore.homes.inviteByEmail(homeID, { email })
     redirect(buildDashboardHref({ home: homeID, notice: "invite-sent" }))
   } catch (error) {
+    unstable_rethrow(error)
     redirect(buildDashboardHref({ home: homeID, error: errorMessage(error) }))
   }
 }
@@ -129,6 +131,7 @@ async function cancelInvitationAction(formData: FormData) {
     await solCore.homes.cancelInvitation(homeID, invitationID)
     redirect(buildDashboardHref({ home: homeID, notice: "invite-cancelled" }))
   } catch (error) {
+    unstable_rethrow(error)
     redirect(buildDashboardHref({ home: homeID, error: errorMessage(error) }))
   }
 }
