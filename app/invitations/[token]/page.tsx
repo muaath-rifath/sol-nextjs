@@ -6,6 +6,7 @@ import { redirect, unstable_rethrow } from "next/navigation"
 type InvitationPageSearchParams = Promise<{
   notice?: string
   error?: string
+  autoAccept?: string
 }>
 
 function invitationHref(token: string, params: Record<string, string | undefined>) {
@@ -47,6 +48,15 @@ export default async function InvitationPage({
     invitationError = errorMessage(error)
   }
 
+  if (session && invitation && invitation.status === "pending" && query.autoAccept === "1") {
+    try {
+      await solCore.invitations.accept(token)
+    } catch (error) {
+      redirect(invitationHref(token, { error: errorMessage(error) }))
+    }
+    redirect("/dashboard?notice=invite-accepted")
+  }
+
   async function acceptAction() {
     "use server"
     if (!(await auth())) {
@@ -77,6 +87,11 @@ export default async function InvitationPage({
   async function signInAction() {
     "use server"
     await signIn("keycloak", { redirectTo: `/invitations/${token}` })
+  }
+
+  async function signUpAction() {
+    "use server"
+    await signIn("keycloak", { redirectTo: invitationHref(token, { autoAccept: "1" }) })
   }
 
   return (
@@ -129,46 +144,99 @@ export default async function InvitationPage({
               This invitation expires on {new Date(invitation.expires_at).toLocaleString()}.
             </p>
 
-            {session ? (
-              <div className="mt-6 flex flex-wrap gap-3">
-                <form action={acceptAction}>
-                  <button
-                    type="submit"
-                    className="rounded-full bg-gradient-to-r from-teal-600 to-cyan-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:from-teal-700 hover:to-cyan-700"
-                  >
-                    Accept invitation
-                  </button>
-                </form>
-                <form action={declineAction}>
-                  <button
-                    type="submit"
-                    className="rounded-full border border-rose-300 px-5 py-2.5 text-sm font-semibold text-rose-700 transition hover:border-rose-500"
-                  >
-                    Decline invitation
-                  </button>
-                </form>
-              </div>
+            {invitation.status === "pending" ? (
+              session ? (
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <form action={acceptAction}>
+                    <button
+                      type="submit"
+                      className="rounded-full bg-gradient-to-r from-teal-600 to-cyan-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:from-teal-700 hover:to-cyan-700"
+                    >
+                      Accept invitation
+                    </button>
+                  </form>
+                  <form action={declineAction}>
+                    <button
+                      type="submit"
+                      className="rounded-full border border-rose-300 px-5 py-2.5 text-sm font-semibold text-rose-700 transition hover:border-rose-500"
+                    >
+                      Decline invitation
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                  {invitation.invitee_is_user ? (
+                    <>
+                      <p className="text-sm text-amber-900">
+                        Sign in with the invited account email to accept this invitation.
+                      </p>
+                      <form action={signInAction} className="mt-3">
+                        <button
+                          type="submit"
+                          className="rounded-full bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-700"
+                        >
+                          Sign in to continue
+                        </button>
+                      </form>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-amber-900">
+                        Create an account with the invited email. After sign up, we will
+                        automatically finish accepting this invitation.
+                      </p>
+                      <form action={signUpAction} className="mt-3">
+                        <button
+                          type="submit"
+                          className="rounded-full bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-700"
+                        >
+                          Sign up to continue
+                        </button>
+                      </form>
+                      <form action={signInAction} className="mt-2">
+                        <button
+                          type="submit"
+                          className="rounded-full border border-stone-300 px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-stone-500"
+                        >
+                          I already have an account
+                        </button>
+                      </form>
+                    </>
+                  )}
+                  <form action={declineAction} className="mt-2">
+                    <button
+                      type="submit"
+                      className="rounded-full border border-stone-300 px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-stone-500"
+                    >
+                      Decline without account
+                    </button>
+                  </form>
+                </div>
+              )
             ) : (
-              <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-sm text-amber-900">
-                  Sign in with the invited account email to accept this invitation.
+              <div className="mt-6 rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                <p className="text-sm text-stone-800">
+                  {invitation.status === "accepted"
+                    ? "This invitation was already accepted."
+                    : invitation.status === "declined"
+                      ? "This invitation was declined."
+                      : "This invitation has expired."}
                 </p>
-                <form action={signInAction} className="mt-3">
-                  <button
-                    type="submit"
-                    className="rounded-full bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-700"
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    href="/dashboard"
+                    className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700"
                   >
-                    Sign in to continue
-                  </button>
-                </form>
-                <form action={declineAction} className="mt-2">
-                  <button
-                    type="submit"
-                    className="rounded-full border border-stone-300 px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-stone-500"
+                    Open dashboard
+                  </Link>
+                  <Link
+                    href="/"
+                    className="rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:border-stone-500"
                   >
-                    Decline without account
-                  </button>
-                </form>
+                    Go to home
+                  </Link>
+                </div>
               </div>
             )}
           </>
