@@ -88,6 +88,20 @@ export interface CursorResponse<T> {
   has_more: boolean
 }
 
+interface RawCursorResponse<T> {
+  data?: T[] | null
+  next_cursor?: string | null
+  has_more?: boolean
+}
+
+function normalizeCursorResponse<T>(raw: RawCursorResponse<T>): CursorResponse<T> {
+  return {
+    data: Array.isArray(raw.data) ? raw.data : [],
+    next_cursor: raw.next_cursor ?? null,
+    has_more: Boolean(raw.has_more),
+  }
+}
+
 export interface Home {
   id: string
   name: string
@@ -136,8 +150,8 @@ export interface InvitationDetail {
 export const solCore = {
   homes: {
     list: (params?: { cursor?: string; limit?: number }) =>
-      solFetch(`/api/v1/homes${buildQuery(params ?? {})}`).then((r) =>
-        r.json() as Promise<CursorResponse<Home>>,
+      solFetch(`/api/v1/homes${buildQuery(params ?? {})}`).then(async (r) =>
+        normalizeCursorResponse<Home>((await r.json()) as RawCursorResponse<Home>),
       ),
     get: (id: string) =>
       solFetch(`/api/v1/homes/${id}`).then((r) => r.json() as Promise<Home>),
@@ -147,8 +161,8 @@ export const solCore = {
         body: JSON.stringify(body),
       }).then((r) => r.json() as Promise<Home>),
     listMembers: (id: string, params?: { cursor?: string; limit?: number }) =>
-      solFetch(`/api/v1/homes/${id}/members${buildQuery(params ?? {})}`).then((r) =>
-        r.json() as Promise<CursorResponse<HomeMember>>,
+      solFetch(`/api/v1/homes/${id}/members${buildQuery(params ?? {})}`).then(async (r) =>
+        normalizeCursorResponse<HomeMember>((await r.json()) as RawCursorResponse<HomeMember>),
       ),
     inviteByEmail: (id: string, body: { email: string }) =>
       solFetch(`/api/v1/homes/${id}/invitations`, {
@@ -159,8 +173,8 @@ export const solCore = {
       id: string,
       params?: { status?: InvitationStatus; cursor?: string; limit?: number },
     ) =>
-      solFetch(`/api/v1/homes/${id}/invitations${buildQuery(params ?? {})}`).then((r) =>
-        r.json() as Promise<CursorResponse<HomeInvitation>>,
+      solFetch(`/api/v1/homes/${id}/invitations${buildQuery(params ?? {})}`).then(async (r) =>
+        normalizeCursorResponse<HomeInvitation>((await r.json()) as RawCursorResponse<HomeInvitation>),
       ),
     cancelInvitation: (homeID: string, invitationID: string) =>
       solFetch(`/api/v1/homes/${homeID}/invitations/${invitationID}`, {
