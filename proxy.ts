@@ -26,7 +26,10 @@ export async function proxy(request: NextRequest) {
 
   // Refresh token failed — force re-login
   if (session.error === "RefreshAccessTokenError") {
-    return NextResponse.redirect(new URL("/", request.url))
+    const rootUrl = new URL("/", request.url)
+    rootUrl.searchParams.set("callbackUrl", pathname)
+    rootUrl.searchParams.set("reauth", "1")
+    return NextResponse.redirect(rootUrl)
   }
 
   return NextResponse.next()

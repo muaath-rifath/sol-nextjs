@@ -9,7 +9,7 @@ export default async function HomePage({
   const session = await auth()
   const { callbackUrl } = await searchParams
 
-  if (session) {
+  if (session && session.error !== "RefreshAccessTokenError") {
     redirect(callbackUrl ?? "/dashboard")
   }
 
@@ -46,7 +46,7 @@ export default async function HomePage({
                 type="submit"
                 className="w-full rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 px-5 py-3 text-sm font-semibold text-white transition hover:from-teal-700 hover:to-cyan-700"
               >
-                Sign in / Sign up
+                Log in / Sign up
               </button>
             </form>
           </section>
