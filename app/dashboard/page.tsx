@@ -263,7 +263,7 @@ export default async function DashboardPage({
             const devices = await solCore.rooms.devices.listAll(activeHomeID, room.id)
             return [room.id, devices] as const
           } catch {
-            return [room.id, []] as const
+            return [room.id, [] as RoomDevice[]] as const
           }
         }),
       )
