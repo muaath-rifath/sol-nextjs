@@ -319,13 +319,7 @@ export default async function DashboardPage({
                     return (
                       <Link
                         key={home.id}
-                        href={withQuery({
-                          home: home.id,
-                          membersCursor: undefined,
-                          invitesCursor: undefined,
-                          notice: undefined,
-                          error: undefined,
-                        })}
+                        href={`/dashboard/homes/${home.id}`}
                         className={`block rounded-2xl border px-3 py-3 transition ${
                           active
                             ? "border-amber-400 bg-amber-50"

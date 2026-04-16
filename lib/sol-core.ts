@@ -147,6 +147,41 @@ export interface InvitationDetail {
   created_at: string
 }
 
+export interface Room {
+  id: string
+  home_id: string
+  name: string
+  floor?: number
+  metadata?: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface RoomDevice {
+  id: string
+  name: string
+  type: string
+  room_id: string
+  state: Record<string, unknown>
+  metadata: Record<string, string>
+  firmware_id?: string
+  online: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface FirmwareVersion {
+  id: string
+  template_id: string
+  version: string
+  bootloader_key: string
+  partition_key: string
+  app_key: string
+  source_key?: string
+  size_bytes: number | null
+  created_at: string
+}
+
 export const solCore = {
   homes: {
     list: (params?: { cursor?: string; limit?: number }) =>
@@ -225,6 +260,62 @@ export const solCore = {
       }).then((r) => r.json()),
   },
 
+  rooms: {
+    list: (homeID: string) =>
+      solFetch(`/api/v1/homes/${homeID}/rooms`).then((r) => r.json() as Promise<Room[]>),
+    create: (homeID: string, body: { name: string; floor?: number }) =>
+      solFetch(`/api/v1/homes/${homeID}/rooms`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }).then((r) => r.json() as Promise<Room>),
+    get: (homeID: string, roomID: string) =>
+      solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}`).then((r) => r.json() as Promise<Room>),
+    update: (homeID: string, roomID: string, body: Partial<{ name: string; floor: number }>) =>
+      solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      }).then((r) => r.json() as Promise<Room>),
+    delete: (homeID: string, roomID: string) =>
+      solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}`, { method: "DELETE" }).then((r) =>
+        jsonOrNull(r),
+      ),
+    devices: {
+      list: (homeID: string, roomID: string) =>
+        solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/devices`).then(
+          (r) => r.json() as Promise<RoomDevice[]>,
+        ),
+      create: (
+        homeID: string,
+        roomID: string,
+        body: { name: string; type: string; metadata?: Record<string, string> },
+      ) =>
+        solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/devices`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        }).then((r) => r.json() as Promise<RoomDevice>),
+      command: (
+        homeID: string,
+        roomID: string,
+        deviceID: string,
+        body: { action: string; params?: Record<string, unknown> },
+      ) =>
+        solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/devices/${deviceID}/command`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        }).then((r) => jsonOrNull(r)),
+      ota: (
+        homeID: string,
+        roomID: string,
+        deviceID: string,
+        body: { firmware_version_id: string },
+      ) =>
+        solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/devices/${deviceID}/ota`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        }).then((r) => r.json()),
+    },
+  },
+
   automations: {
     list: () => solFetch("/api/v1/automations").then((r) => r.json()),
     get: (id: string) => solFetch(`/api/v1/automations/${id}`).then((r) => r.json()),
@@ -243,11 +334,18 @@ export const solCore = {
   },
 
   firmware: {
-    list: () => solFetch("/api/v1/firmware").then((r) => r.json()),
+    list: (templateID?: string) =>
+      solFetch(`/api/v1/firmware${templateID ? `?template_id=${encodeURIComponent(templateID)}` : ""}`).then(
+        (r) => r.json() as Promise<FirmwareVersion[]>,
+      ),
     upload: (formData: FormData) =>
       solFetch("/api/v1/firmware/upload", {
         method: "POST",
         body: formData,
-      }).then((r) => r.json()),
+      }).then((r) => r.json() as Promise<FirmwareVersion>),
+    presignedUrl: (id: string) =>
+      solFetch(`/api/v1/firmware/${id}/presigned-url`).then((r) =>
+        r.json() as Promise<{ url: string }>,
+      ),
   },
 }
