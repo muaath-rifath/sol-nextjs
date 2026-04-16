@@ -40,14 +40,14 @@ export default async function FirmwarePage({
 
   const [firmwareVersions, rooms] = await Promise.all([
     solCore.firmware.list(templateID),
-    solCore.rooms.list(homeId),
+    solCore.rooms.listAll(homeId),
   ])
 
-  const roomDevices = new Map<string, Awaited<ReturnType<typeof solCore.rooms.devices.list>>>()
+  const roomDevices = new Map<string, Awaited<ReturnType<typeof solCore.rooms.devices.listAll>>>()
   await Promise.all(
     rooms.map(async (room) => {
       try {
-        const devices = await solCore.rooms.devices.list(homeId, room.id)
+        const devices = await solCore.rooms.devices.listAll(homeId, room.id)
         roomDevices.set(room.id, devices)
       } catch {
         roomDevices.set(room.id, [])

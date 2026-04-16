@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sentient Home - My Infrastructure</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-background": "#131b2e",
+                    "tertiary": "#734700",
+                    "surface-variant": "#dae2fd",
+                    "on-tertiary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "inverse-surface": "#283044",
+                    "surface-container": "#eaedff",
+                    "on-surface-variant": "#3e4947",
+                    "on-primary-fixed": "#00201d",
+                    "surface-dim": "#d2d9f4",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-container": "#ffe6cc",
+                    "primary-fixed-dim": "#80d5cb",
+                    "primary": "#005c55",
+                    "inverse-primary": "#80d5cb",
+                    "inverse-on-surface": "#eef0ff",
+                    "tertiary-fixed": "#ffddb8",
+                    "surface-tint": "#006a63",
+                    "surface-container-lowest": "#ffffff",
+                    "surface": "#faf8ff",
+                    "on-tertiary-fixed": "#2a1700",
+                    "outline": "#6e7977",
+                    "surface-container-low": "#f2f3ff",
+                    "outline-variant": "#bdc9c6",
+                    "on-secondary-fixed": "#0d1c2f",
+                    "secondary": "#515f74",
+                    "on-error": "#ffffff",
+                    "surface-container-high": "#e2e7ff",
+                    "on-secondary-container": "#57657b",
+                    "tertiary-fixed-dim": "#ffb95f",
+                    "surface-bright": "#faf8ff",
+                    "on-secondary-fixed-variant": "#3a485c",
+                    "primary-fixed": "#9cf2e8",
+                    "on-error-container": "#93000a",
+                    "surface-container-highest": "#dae2fd",
+                    "tertiary-container": "#945d00",
+                    "background": "#faf8ff",
+                    "on-primary": "#ffffff",
+                    "primary-container": "#0f766e",
+                    "secondary-fixed-dim": "#b9c7e0",
+                    "on-primary-fixed-variant": "#00504a",
+                    "on-surface": "#131b2e",
+                    "error": "#ba1a1a",
+                    "secondary-fixed": "#d5e3fd",
+                    "secondary-container": "#d5e3fd",
+                    "on-primary-container": "#a3faef"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+        .tonal-shift-bg { background-color: #f2f3ff; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-slate-50/70 dark:bg-slate-950/70 backdrop-blur-3xl shadow-[0px_20px_40px_rgba(19,27,46,0.06)] bg-gradient-to-b from-slate-200/20 to-transparent">
+<div class="flex justify-between items-center px-8 h-16 w-full max-w-[1920px] mx-auto">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tighter text-teal-900 dark:text-teal-50 font-manrope">Sol Smart Home</span>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low cursor-pointer hover:bg-slate-200/50 transition-all duration-300">
+<span class="material-symbols-outlined text-teal-700" data-icon="home">home</span>
+<span class="text-sm font-semibold text-teal-700">The Glass House</span>
+<span class="material-symbols-outlined text-teal-700 text-sm" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<div class="hidden md:flex items-center gap-6">
+<nav class="flex gap-6 text-sm font-manrope tracking-tight font-semibold">
+<a class="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 transition-all duration-300 px-3 py-1 rounded" href="#">Dashboard</a>
+<a class="text-teal-700 dark:text-teal-400 font-bold px-3 py-1 rounded" href="#">My Infrastructure</a>
+<a class="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 transition-all duration-300 px-3 py-1 rounded" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-slate-200/50 transition-all duration-300 scale-95 active:opacity-80">
+<span class="material-symbols-outlined text-slate-600" data-icon="notifications">notifications</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-xs font-bold shadow-md">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+</div>
+</div>
+</header>
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden lg:flex flex-col h-screen w-64 border-r border-slate-200/15 bg-slate-50 dark:bg-slate-950 pt-20 pb-8 px-4 gap-2">
+<div class="mb-8 px-2">
+<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 font-inter">Sentient Home</h2>
+<p class="text-xs text-slate-500 font-inter uppercase tracking-widest">Precision Control</p>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors duration-200 font-inter text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="space_dashboard">space_dashboard</span>
+<span>Workspace</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-200 text-teal-700 font-semibold border-l-2 border-teal-600 transition-colors duration-200 font-inter text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="developer_board">developer_board</span>
+<span>Firmware Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors duration-200 font-inter text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span>Infrastructure Logs</span>
+</a>
+</nav>
+<div class="mt-auto p-4 bg-surface-container-low rounded-xl">
+<div class="flex items-center gap-3 mb-3">
+<div class="w-10 h-10 rounded-lg overflow-hidden bg-slate-300">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="professional portrait of a technical systems architect in a modern office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXs1PZoQS3ARh80QAt4TlPVQpH-FG-dkMnWHYGWZlQUuTWUCyz0Ugp2nURfHqLOu3Cv4NGJrRSG-M9OtkRQtaIYLaoWIsBUIQDOguP1IXMKcEsdMKDnSA1wJdA4Uq8qiw5BUmnXRtYX7pyUnJ1BecLfeVoMIg6b5e7uud8Effw7GIH8P7IGnDOEhfD93JsLAItA_C4_E2ZKccO1EbG3xiXpBy8dWcsFNqY68iikbbZ8TQ5q2A1pELaqTfXMT2SFGg64729jR5IB08"/>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Alex Rivera</p>
+<p class="text-[10px] text-slate-500">Root Admin</p>
+</div>
+</div>
+<div class="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-3/4"></div>
+</div>
+<p class="text-[9px] mt-1 text-slate-400">Node Usage: 14/20</p>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto pt-24 pb-12 px-8 bg-surface">
+<div class="max-w-6xl mx-auto">
+<header class="mb-10">
+<h1 class="text-[3.5rem] font-headline font-semibold tracking-tight text-on-surface leading-tight">My Infrastructure</h1>
+<div class="flex items-center gap-4 mt-2">
+<span class="flex items-center gap-1 text-label text-xs font-bold text-primary bg-primary-fixed px-2.5 py-1 rounded-full uppercase tracking-widest">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                            System Live
+                        </span>
+<span class="text-body text-sm text-outline">8 active ESP32 nodes spanning 4 main clusters</span>
+</div>
+</header>
+<!-- Hardware Rooms Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+<!-- Node Card 1 -->
+<div class="group relative bg-surface-container-lowest rounded-xl p-6 transition-all duration-300 hover:shadow-[0px_20px_40px_rgba(19,27,46,0.06)] border border-transparent hover:border-outline-variant/15">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined" data-icon="living">living</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-[10px] font-bold text-on-primary-fixed uppercase tracking-tighter">Online</span>
+<span class="text-[10px] text-outline mt-1 font-mono">ID: ESP_LIV_001</span>
+</div>
+</div>
+<h3 class="text-xl font-headline font-semibold text-on-surface mb-2">Living Room Node</h3>
+<div class="flex flex-wrap gap-2 mb-4">
+<span class="px-2 py-1 rounded-full bg-surface-container-low text-[10px] font-medium text-secondary">A/C Control</span>
+<span class="px-2 py-1 rounded-full bg-surface-container-low text-[10px] font-medium text-secondary">6x Dimmer</span>
+<span class="px-2 py-1 rounded-full bg-surface-container-low text-[10px] font-medium text-secondary">Sensor Hub</span>
+</div>
+<div class="pt-4 border-t border-outline-variant/10 flex justify-between items-center">
+<span class="text-xs text-outline">Latency: 12ms</span>
+<button class="text-primary text-sm font-semibold flex items-center gap-1 hover:underline">
+                                Configure <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Node Card 2 -->
+<div class="group relative bg-surface-container-lowest rounded-xl p-6 transition-all duration-300 hover:shadow-[0px_20px_40px_rgba(19,27,46,0.06)] border border-transparent hover:border-outline-variant/15">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined" data-icon="kitchen">kitchen</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-[10px] font-bold text-on-primary-fixed uppercase tracking-tighter">Online</span>
+<span class="text-[10px] text-outline mt-1 font-mono">ID: ESP_KTN_004</span>
+</div>
+</div>
+<h3 class="text-xl font-headline font-semibold text-on-surface mb-2">Kitchen Cluster</h3>
+<div class="flex flex-wrap gap-2 mb-4">
+<span class="px-2 py-1 rounded-full bg-surface-container-low text-[10px] font-medium text-secondary">Fridge Monitor</span>
+<span class="px-2 py-1 rounded-full bg-surface-container-low text-[10px] font-medium text-secondary">Valve Ctrl</span>
+</div>
+<div class="pt-4 border-t border-outline-variant/10 flex justify-between items-center">
+<span class="text-xs text-outline">Latency: 18ms</span>
+<button class="text-primary text-sm font-semibold flex items-center gap-1 hover:underline">
+                                Configure <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Node Card 3 (Offline) -->
+<div class="group relative bg-surface-container-lowest rounded-xl p-6 transition-all duration-300 hover:shadow-[0px_20px_40px_rgba(19,27,46,0.06)] border border-transparent hover:border-outline-variant/15">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-lg bg-error-container/30 flex items-center justify-center text-error transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined" data-icon="garage">garage</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="px-2 py-0.5 rounded-full bg-error-container text-[10px] font-bold text-on-error-container uppercase tracking-tighter">Offline</span>
+<span class="text-[10px] text-outline mt-1 font-mono">ID: ESP_GRG_009</span>
+</div>
+</div>
+<h3 class="text-xl font-headline font-semibold text-on-surface mb-2">Garage Node</h3>
+<div class="flex flex-wrap gap-2 mb-4 opacity-50">
+<span class="px-2 py-1 rounded-full bg-surface-container-low text-[10px] font-medium text-secondary">Door Motor</span>
+<span class="px-2 py-1 rounded-full bg-surface-container-low text-[10px] font-medium text-secondary">EV Charger</span>
+</div>
+<div class="pt-4 border-t border-outline-variant/10 flex justify-between items-center">
+<span class="text-xs text-error font-medium">Reconnecting...</span>
+<button class="text-primary text-sm font-semibold flex items-center gap-1 hover:underline">
+                                Troubleshoot <span class="material-symbols-outlined text-sm" data-icon="build">build</span>
+</button>
+</div>
+</div>
+<!-- Create New Node Card -->
+<div class="group relative rounded-xl p-6 border-2 border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center transition-all duration-300 hover:border-primary/50 hover:bg-primary-fixed/10 cursor-pointer">
+<div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center text-primary mb-4 transition-transform group-hover:rotate-90">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</div>
+<h3 class="text-lg font-headline font-semibold text-on-surface">Create New Node</h3>
+<p class="text-xs text-outline mt-1 px-4">Provision a new ESP32 or ESP8266 controller to the fleet.</p>
+</div>
+<!-- Map/Location Card (Bento Style Wide) -->
+<div class="md:col-span-2 relative rounded-xl overflow-hidden h-64 shadow-[0px_20px_40px_rgba(19,27,46,0.06)] group">
+<img alt="The Glass House" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="minimalist architectural rendering of a modern glass house nestled in a misty forest at dawn" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpTcU2Y82zpdodGt-NOSnQRdrOoDNS0V5ej_Y3XGEpyPHbwzCkQwIHIbD7DcmMKricghhC7YGpF5ipns83BDuL29anSZ2sa3J8t-XXtgVmPVjPzTGK1cC5wmjLSDtxBVnft9-ukeWlSisliC6rDilAiUD2QTikXZ8WZ79-0pod05voYp_WWdorotxEsJFY7yvJCklFz1vARQ_njx_VqjDktIIc0KYrXGkgAC2D-TEN5X_CncndRWfQ6T2EP6yQ6DO8f0zBMp_1Kis"/>
+<div class="absolute inset-0 bg-gradient-to-t from-on-surface/80 via-transparent to-transparent p-8 flex flex-col justify-end">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-label text-[10px] font-bold text-white/70 uppercase tracking-widest">Active Site</p>
+<h3 class="text-2xl font-headline font-bold text-white">The Glass House</h3>
+<p class="text-sm text-white/80">Pacific Northwest, Sector 7</p>
+</div>
+<div class="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20">
+<p class="text-[10px] text-white/60 font-bold uppercase">Signal Strength</p>
+<div class="flex gap-1 mt-1">
+<div class="w-1.5 h-3 bg-primary rounded-full"></div>
+<div class="w-1.5 h-3 bg-primary rounded-full"></div>
+<div class="w-1.5 h-3 bg-primary rounded-full"></div>
+<div class="w-1.5 h-3 bg-white/20 rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Panels -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- Global Access Management -->
+<section class="bg-surface-container-low rounded-2xl p-8">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h2 class="text-xl font-headline font-bold text-on-surface">Global Access Management</h2>
+<p class="text-sm text-outline">Manage infrastructure-level permissions</p>
+</div>
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="admin_panel_settings">admin_panel_settings</span>
+</div>
+<div class="space-y-4">
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined" data-icon="vpn_key">vpn_key</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">OTA Firmware Updates</p>
+<p class="text-[11px] text-outline">Encrypted over WebSocket</p>
+</div>
+</div>
+<div class="w-12 h-6 bg-primary rounded-full relative p-1 cursor-pointer">
+<div class="w-4 h-4 bg-white rounded-full ml-auto"></div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Remote Console Access</p>
+<p class="text-[11px] text-outline">Restricted to Root Admins</p>
+</div>
+</div>
+<div class="w-12 h-6 bg-primary rounded-full relative p-1 cursor-pointer">
+<div class="w-4 h-4 bg-white rounded-full ml-auto"></div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Third-Party Bridges</p>
+<p class="text-[11px] text-outline">HomeKit &amp; MQTT active</p>
+</div>
+</div>
+<div class="w-12 h-6 bg-outline-variant rounded-full relative p-1 cursor-pointer">
+<div class="w-4 h-4 bg-white rounded-full"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent Invitations -->
+<section class="bg-surface-container-low rounded-2xl p-8">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h2 class="text-xl font-headline font-bold text-on-surface">Recent Invitations</h2>
+<p class="text-sm text-outline">External access history &amp; pending</p>
+</div>
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="group_add">group_add</span>
+</div>
+<div class="space-y-3">
+<!-- Invitee 1 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
+<img alt="Invite User" class="w-full h-full object-cover" data-alt="close up headshot of a smiling young man in his late 20s with short hair and clean shaven face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCLyoQGNYaET8YK6mWdM5PPTDQiDYlcA-wBKnz2-UFWiXiRC9AgqDIJYsfuO2rS1khxcEOiGqlsbNndl5Vw3Ffh3y8AGMTf-dsGtk2IeF_YkiZdkBNgUN8ZE1XMrFsmFVplw0nwwzXkAIPhOJdJRkXeVdmq2XAqFC4BxoTqABK9i-GUlKPHtNFLxV48XliW9hpvZVbmh6drJ9YgBAsMd2B1GoiJNzlSKdW5IsNZk-okahU5vGRYVQm8aMQe3IehVw2G8LdBzHbks8"/>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Julian Chen</p>
+<p class="text-[10px] text-tertiary font-bold uppercase tracking-tighter">Guest Editor</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-[11px] text-outline">Expires in 14h</p>
+<button class="text-error text-[10px] font-bold uppercase tracking-widest mt-1 hover:underline">Revoke</button>
+</div>
+</div>
+<!-- Invitee 2 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
+<img alt="Invite User" class="w-full h-full object-cover" data-alt="portrait of a confident woman with curly hair and glasses in a brightly lit professional setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDihnNOhGEdXuQMnkX-EAAC-p2ls2n-jA5-kNjUKRiseAEdFGrxKVhkrTZFeiDmdLwRQ9Zt-oplh38-Apoa_QmMWTI1kdbH07y-C1MkZm0bV-6CRhZMBV9lzhO--wSNM1RrcyD12I63PzgDveTYcpGVvnYjhqxV2UgzYCxP7kAW2qo5YDrZZoJNLwQz6sGAnJtPUEWRS8GJTk5rcI9L9xSD8SqsfK5x36aUd3TMZ_5EHSKc2pF0ZA_NVS_cGBQXk92O1exuyIlMsc"/>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Sasha K. (Support)</p>
+<p class="text-[10px] text-outline font-bold uppercase tracking-tighter">Maintenance</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-[11px] text-outline">Active 2m ago</p>
+<button class="text-error text-[10px] font-bold uppercase tracking-widest mt-1 hover:underline">Revoke</button>
+</div>
+</div>
+<!-- Pending Invite -->
+<div class="flex items-center justify-between p-4 border border-dashed border-outline-variant/40 rounded-xl">
+<div class="flex items-center gap-3 opacity-60">
+<div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-400" data-icon="mail">mail</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">m.smith@dev.home</p>
+<p class="text-[10px] text-outline uppercase tracking-tighter">Pending Invitation</p>
+</div>
+</div>
+<button class="bg-primary text-white text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-widest hover:opacity-90">Resend</button>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+</div>
+<!-- Mobile Bottom Navigation -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white flex justify-around items-center px-4 border-t border-slate-100 z-50">
+<div class="flex flex-col items-center text-slate-500">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[10px] font-bold">Home</span>
+</div>
+<div class="flex flex-col items-center text-teal-700">
+<span class="material-symbols-outlined" data-icon="developer_board">developer_board</span>
+<span class="text-[10px] font-bold">Infra</span>
+</div>
+<div class="w-12 h-12 bg-primary rounded-full -mt-10 flex items-center justify-center text-white shadow-lg border-4 border-white">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</div>
+<div class="flex flex-col items-center text-slate-500">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span class="text-[10px] font-bold">Logs</span>
+</div>
+<div class="flex flex-col items-center text-slate-500">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-[10px] font-bold">Me</span>
+</div>
+</nav>
+</body></html>

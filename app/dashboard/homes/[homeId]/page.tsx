@@ -34,13 +34,13 @@ export default async function HomeDetailPage({
   const { homeId } = await params
   const query = await searchParams
 
-  const [home, rooms] = await Promise.all([solCore.homes.get(homeId), solCore.rooms.list(homeId)])
+  const [home, rooms] = await Promise.all([solCore.homes.get(homeId), solCore.rooms.listAll(homeId)])
 
   const roomDeviceCounts = new Map<string, number>()
   await Promise.all(
     rooms.map(async (room) => {
       try {
-        const devices = await solCore.rooms.devices.list(homeId, room.id)
+        const devices = await solCore.rooms.devices.listAll(homeId, room.id)
         roomDeviceCounts.set(room.id, devices.length)
       } catch {
         roomDeviceCounts.set(room.id, 0)

@@ -45,7 +45,7 @@ export default async function RoomDetailPage({
 
   const [room, devices, firmwareVersions] = await Promise.all([
     solCore.rooms.get(homeId, roomId),
-    solCore.rooms.devices.list(homeId, roomId),
+    solCore.rooms.devices.listAll(homeId, roomId),
     solCore.firmware.list(),
   ])
 

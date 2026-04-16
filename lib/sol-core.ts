@@ -79,6 +79,19 @@ async function jsonOrNull<T>(response: Response): Promise<T | null> {
   return (await response.json()) as T
 }
 
+async function collectCursorPages<T>(
+  fetchPage: (cursor?: string) => Promise<CursorResponse<T>>,
+): Promise<T[]> {
+  const data: T[] = []
+  let cursor: string | undefined
+  do {
+    const page = await fetchPage(cursor)
+    data.push(...page.data)
+    cursor = page.has_more ? (page.next_cursor ?? undefined) : undefined
+  } while (cursor)
+  return data
+}
+
 export type InvitationStatus = "pending" | "accepted" | "declined" | "expired"
 export type MemberRole = "owner" | "admin" | "member"
 
@@ -240,7 +253,14 @@ export const solCore = {
   },
 
   devices: {
-    list: () => solFetch("/api/v1/devices").then((r) => r.json()),
+    list: (params?: { cursor?: string; limit?: number }) =>
+      solFetch(`/api/v1/devices${buildQuery(params ?? {})}`).then(async (r) =>
+        normalizeCursorResponse<RoomDevice>((await r.json()) as RawCursorResponse<RoomDevice>),
+      ),
+    listAll: (limit = 100) =>
+      collectCursorPages<RoomDevice>((cursor) =>
+        solCore.devices.list({ cursor, limit }),
+      ),
     get: (id: string) => solFetch(`/api/v1/devices/${id}`).then((r) => r.json()),
     create: (body: unknown) =>
       solFetch("/api/v1/devices", {
@@ -261,8 +281,12 @@ export const solCore = {
   },
 
   rooms: {
-    list: (homeID: string) =>
-      solFetch(`/api/v1/homes/${homeID}/rooms`).then((r) => r.json() as Promise<Room[]>),
+    list: (homeID: string, params?: { cursor?: string; limit?: number }) =>
+      solFetch(`/api/v1/homes/${homeID}/rooms${buildQuery(params ?? {})}`).then(async (r) =>
+        normalizeCursorResponse<Room>((await r.json()) as RawCursorResponse<Room>),
+      ),
+    listAll: (homeID: string, limit = 100) =>
+      collectCursorPages<Room>((cursor) => solCore.rooms.list(homeID, { cursor, limit })),
     create: (homeID: string, body: { name: string; floor?: number }) =>
       solFetch(`/api/v1/homes/${homeID}/rooms`, {
         method: "POST",
@@ -280,9 +304,14 @@ export const solCore = {
         jsonOrNull(r),
       ),
     devices: {
-      list: (homeID: string, roomID: string) =>
-        solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/devices`).then(
-          (r) => r.json() as Promise<RoomDevice[]>,
+      list: (homeID: string, roomID: string, params?: { cursor?: string; limit?: number }) =>
+        solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/devices${buildQuery(params ?? {})}`).then(
+          async (r) =>
+            normalizeCursorResponse<RoomDevice>((await r.json()) as RawCursorResponse<RoomDevice>),
+        ),
+      listAll: (homeID: string, roomID: string, limit = 100) =>
+        collectCursorPages<RoomDevice>((cursor) =>
+          solCore.rooms.devices.list(homeID, roomID, { cursor, limit }),
         ),
       create: (
         homeID: string,
