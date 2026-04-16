@@ -9,7 +9,6 @@ import {
   type RoomDevice,
   solCore,
 } from "@/lib/sol-core"
-import Image from "next/image"
 import Link from "next/link"
 import { redirect, unstable_rethrow } from "next/navigation"
 
@@ -357,18 +356,12 @@ export default async function DashboardPage({
 
       <div className="relative mx-auto grid w-full max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:py-8">
         <aside className="space-y-4 rounded-3xl bg-white/74 p-4 shadow-[0_22px_45px_rgba(19,27,46,0.08)] backdrop-blur-xl lg:p-5">
-          <div className="overflow-hidden rounded-2xl">
-            <Image
-              src="/stitch-glass-house.jpg"
-              alt="The Glass House"
-              width={1200}
-              height={420}
-              className="h-32 w-full object-cover"
-            />
-            <div className="bg-gradient-to-r from-[color:var(--secondary)]/90 to-[color:var(--primary)]/85 p-3 text-white">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-white/70">Active Site</p>
-              <p className="text-sm font-semibold">The Glass House</p>
-            </div>
+          <div className="rounded-2xl bg-[color:var(--surface-low)] p-4">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Active Home</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">{selectedHome?.name ?? "No home selected"}</p>
+            <p className="mt-2 text-xs text-slate-600">
+              {rooms.length} room{rooms.length === 1 ? "" : "s"} | {onlineDevices}/{allDevices.length} online devices
+            </p>
           </div>
 
           <form action={createHomeAction} className="space-y-2 rounded-2xl bg-[color:var(--surface-low)] p-3">
@@ -528,24 +521,26 @@ export default async function DashboardPage({
                   </div>
                 </div>
 
-                <div className="overflow-hidden rounded-3xl bg-white/80 shadow-[0_22px_45px_rgba(19,27,46,0.08)] backdrop-blur-xl">
-                  <Image
-                    src="/stitch-user-alex-rivera.jpg"
-                    alt="Admin profile"
-                    width={900}
-                    height={360}
-                    className="h-36 w-full object-cover"
-                  />
-                  <div className="p-4">
-                    <p className="text-sm font-semibold">Alex Rivera</p>
-                    <p className="text-xs text-slate-500">Root Admin</p>
-                    <div className="mt-3 h-2 rounded-full bg-slate-200">
-                      <div
-                        className="h-2 rounded-full bg-[linear-gradient(120deg,var(--primary),var(--primary-strong))]"
-                        style={{ width: `${allDevices.length === 0 ? 0 : Math.max(8, Math.round((onlineDevices / allDevices.length) * 100))}%` }}
-                      />
+                <div className="rounded-3xl bg-white/80 p-4 shadow-[0_22px_45px_rgba(19,27,46,0.08)] backdrop-blur-xl">
+                  <p className="text-sm font-semibold text-slate-900">Infrastructure Stats</p>
+                  <div className="mt-3 space-y-3 text-xs text-slate-600">
+                    <p>
+                      Rooms: <span className="font-semibold text-slate-900">{rooms.length}</span>
+                    </p>
+                    <p>
+                      Devices: <span className="font-semibold text-slate-900">{allDevices.length}</span>
+                    </p>
+                    <p>
+                      Online: <span className="font-semibold text-slate-900">{onlineDevices}</span>
+                    </p>
+                    <div className="pt-1">
+                      <div className="h-2 rounded-full bg-slate-200">
+                        <div
+                          className="h-2 rounded-full bg-[linear-gradient(120deg,var(--primary),var(--primary-strong))]"
+                          style={{ width: `${allDevices.length === 0 ? 0 : Math.max(8, Math.round((onlineDevices / allDevices.length) * 100))}%` }}
+                        />
+                      </div>
                     </div>
-                    <p className="mt-1 text-[11px] text-slate-500">Node Usage: {onlineDevices}/{allDevices.length}</p>
                   </div>
                 </div>
               </div>
@@ -649,23 +644,14 @@ export default async function DashboardPage({
                           No invitations for this filter.
                         </p>
                       ) : (
-                        invitations.data.map((invitation, index) => (
+                        invitations.data.map((invitation) => (
                           <div key={invitation.id} className="rounded-xl bg-white px-3 py-3">
                             <div className="flex items-start justify-between gap-3">
-                              <div className="flex items-center gap-2">
-                                <Image
-                                  src={index % 2 === 0 ? "/stitch-invite-julian.jpg" : "/stitch-invite-sasha.jpg"}
-                                  alt="Invitation profile"
-                                  width={64}
-                                  height={64}
-                                  className="h-8 w-8 rounded-full object-cover"
-                                />
-                                <div>
-                                  <p className="text-sm font-semibold">{invitation.invitee_email}</p>
-                                  <p className="text-xs text-slate-500">
-                                    {invitation.status} | expires {new Date(invitation.expires_at).toLocaleDateString()}
-                                  </p>
-                                </div>
+                              <div>
+                                <p className="text-sm font-semibold">{invitation.invitee_email}</p>
+                                <p className="text-xs text-slate-500">
+                                  {invitation.status} | expires {new Date(invitation.expires_at).toLocaleDateString()}
+                                </p>
                               </div>
                               {invitation.status === "pending" ? (
                                 <form action={cancelInvitationAction}>
