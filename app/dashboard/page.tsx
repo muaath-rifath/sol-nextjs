@@ -205,22 +205,27 @@ export default async function DashboardPage({
 
   if (activeHomeID) {
     try {
-      const [home, memberList, invitationList] = await Promise.all([
+      const [home, memberList] = await Promise.all([
         solCore.homes.get(activeHomeID),
         solCore.homes.listMembers(activeHomeID, {
           cursor: query.membersCursor,
-          limit: 8,
-        }),
-        solCore.homes.listInvitations(activeHomeID, {
-          status: statusFilter,
-          cursor: query.invitesCursor,
           limit: 8,
         }),
       ])
 
       selectedHome = home
       members = memberList
-      invitations = invitationList
+
+      // Invitations require owner/admin — fetch separately so members still see the home
+      try {
+        invitations = await solCore.homes.listInvitations(activeHomeID, {
+          status: statusFilter,
+          cursor: query.invitesCursor,
+          limit: 8,
+        })
+      } catch {
+        // Member role can't list invitations — leave empty
+      }
     } catch (error) {
       selectedHomeError = errorMessage(error)
     }
@@ -387,7 +392,7 @@ export default async function DashboardPage({
                   </div>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-2">
+                <div className={`grid gap-4 ${selectedHome.my_role === "owner" || selectedHome.my_role === "admin" ? "xl:grid-cols-2" : ""}`}>
                   <div className="rounded-2xl border border-stone-200 bg-white p-4">
                     <h3 className="text-base font-semibold text-stone-900">Members</h3>
                     <div className="mt-3 space-y-2">
@@ -422,6 +427,7 @@ export default async function DashboardPage({
                     ) : null}
                   </div>
 
+                  {selectedHome.my_role === "owner" || selectedHome.my_role === "admin" ? (
                   <div className="rounded-2xl border border-stone-200 bg-white p-4">
                     <h3 className="text-base font-semibold text-stone-900">Invitations</h3>
                     <form action={inviteByEmailAction} className="mt-3 flex gap-2">
@@ -511,6 +517,7 @@ export default async function DashboardPage({
                       </Link>
                     ) : null}
                   </div>
+                  ) : null}
                 </div>
               </>
             ) : null}
