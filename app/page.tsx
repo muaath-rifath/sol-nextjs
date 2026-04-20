@@ -18,7 +18,7 @@ export default async function HomePage({
       <main className="w-full max-w-4xl overflow-hidden rounded-3xl border border-amber-200 bg-white/90 shadow-xl backdrop-blur-sm">
         <div className="grid gap-0 md:grid-cols-[1.2fr_1fr]">
           <section className="space-y-6 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 px-8 py-10 text-white sm:px-10 sm:py-12">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">Sol Platform</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">Zynix Systems</p>
             <h1 className="text-4xl font-semibold leading-tight tracking-tight">Smart homes, shared clearly.</h1>
             <p className="max-w-md text-sm text-amber-50/95 sm:text-base">
               Create homes when you need them, invite the right people by email, and keep membership
@@ -38,7 +38,7 @@ export default async function HomePage({
               action={async () => {
                 "use server"
                 const { callbackUrl } = await searchParams
-                await signIn("keycloak", { redirectTo: callbackUrl ?? "/dashboard" })
+                await signIn("zitadel", { redirectTo: callbackUrl ?? "/dashboard" })
               }}
               className="mt-8"
             >

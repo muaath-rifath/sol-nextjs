@@ -1,13 +1,12 @@
 import NextAuth from "next-auth"
-import Keycloak from "next-auth/providers/keycloak"
+import Zitadel from "next-auth/providers/zitadel"
 import type { JWT } from "next-auth/jwt"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
-    Keycloak({
-      clientId: process.env.AUTH_KEYCLOAK_ID!,
-      clientSecret: process.env.AUTH_KEYCLOAK_SECRET!,
-      issuer: process.env.AUTH_KEYCLOAK_ISSUER!,
+    Zitadel({
+      clientId: process.env.AUTH_ZITADEL_ID!,
+      issuer: process.env.AUTH_ZITADEL_ISSUER!,
     }),
   ],
 
@@ -52,14 +51,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
-    const tokenUrl = `${process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/token`
+    const tokenUrl = `${process.env.AUTH_ZITADEL_ISSUER}/oauth/v2/token`
 
     const response = await fetch(tokenUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        client_id: process.env.AUTH_KEYCLOAK_ID!,
-        client_secret: process.env.AUTH_KEYCLOAK_SECRET!,
+        client_id: process.env.AUTH_ZITADEL_ID!,
         grant_type: "refresh_token",
         refresh_token: token.refreshToken,
       }),
