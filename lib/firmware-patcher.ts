@@ -19,7 +19,7 @@ export const SLOT_MAP = {
   wifiSsid: { fieldSize: 33, maxLength: 32, label: "Wi-Fi SSID" },
   wifiPassword: { fieldSize: 65, maxLength: 64, label: "Wi-Fi password" },
   mqttBrokerUri: { fieldSize: 129, maxLength: 128, label: "MQTT broker URI" },
-  deviceId: { fieldSize: 33, maxLength: 32, label: "Device ID" },
+  deviceId: { fieldSize: 65, maxLength: 64, label: "Device ID" },
   templateId: { fieldSize: 33, maxLength: 32, label: "Template ID" },
 } as const
 
