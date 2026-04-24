@@ -1,7 +1,7 @@
 "use client"
 
 import { patchFirmware, type FlashConfig, type FirmwareTemplateId } from "@/lib/firmware-patcher"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 
 type FirmwareVersion = {
   id: string
@@ -13,6 +13,7 @@ type DeviceOption = {
   id: string
   name: string
   room_id: string
+  metadata?: Record<string, string>
 }
 
 type Props = {
@@ -22,21 +23,38 @@ type Props = {
 }
 
 export default function Flasher({ firmwareVersions, devices, defaultTemplate }: Props) {
-  const [firmwareID, setFirmwareID] = useState<string>(firmwareVersions[0]?.id ?? "")
   const [deviceID, setDeviceID] = useState<string>(devices[0]?.id ?? "")
   const [wifiSsid, setWifiSsid] = useState("")
   const [wifiPassword, setWifiPassword] = useState("")
   const [mqttBrokerUri, setMqttBrokerUri] = useState("")
-  const [templateMode, setTemplateMode] = useState("0")
-  const [relayPins, setRelayPins] = useState("12,13,14,15")
-  const [relayActiveLowMask, setRelayActiveLowMask] = useState("0")
   const [isBusy, setIsBusy] = useState(false)
   const [status, setStatus] = useState<string>("Ready")
 
-  const selectedFirmware = useMemo(
-    () => firmwareVersions.find((f) => f.id === firmwareID) ?? firmwareVersions[0],
-    [firmwareID, firmwareVersions],
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setMqttBrokerUri(`mqtts://api.mysol.internal:8883`) // Example fallback
+      if (window.location.hostname) {
+        setMqttBrokerUri(window.location.protocol === 'https:'
+          ? `mqtts://${window.location.hostname}:8883`
+          : `mqtt://${window.location.hostname}:1883`)
+      }
+    }
+  }, [])
+
+  const selectedDevice = useMemo(
+    () => devices.find((d) => d.id === deviceID) ?? devices[0],
+    [deviceID, devices]
   )
+
+  const selectedFirmware = useMemo(() => {
+    if (!selectedDevice) return firmwareVersions[0]
+    const fwId = selectedDevice.metadata?.firmware_id
+    if (fwId) {
+      const match = firmwareVersions.find((f) => f.id === fwId)
+      if (match) return match
+    }
+    return firmwareVersions[0]
+  }, [selectedDevice, firmwareVersions])
 
   async function onFlash() {
     if (!selectedFirmware) {
@@ -57,16 +75,6 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate }: 
       }
       const arrayBuffer = await response.arrayBuffer()
       const bytes = new Uint8Array(arrayBuffer)
-
-      const pins = relayPins
-        .split(",")
-        .map((v) => Number(v.trim()))
-        .filter((v) => Number.isFinite(v))
-
-      if (pins.length !== 4) {
-        throw new Error("Relay pins must contain exactly 4 comma-separated numbers")
-      }
-
       setStatus("Patching firmware...")
       const patched = await patchFirmware(bytes, {
         wifiSsid,
@@ -74,9 +82,9 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate }: 
         mqttBrokerUri,
         deviceId: deviceID,
         templateId: (selectedFirmware.template_id || defaultTemplate || "relay_single") as FirmwareTemplateId,
-        templateMode: Number(templateMode),
-        relayPins: [pins[0], pins[1], pins[2], pins[3]],
-        relayActiveLowMask: Number(relayActiveLowMask),
+        templateMode: 0,
+        relayPins: [12, 13, 14, 15],
+        relayActiveLowMask: 0,
       } as FlashConfig)
 
       setStatus("Connecting to serial...")
@@ -143,25 +151,9 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate }: 
     <div className="rounded-3xl border border-white/60 bg-surface-container-low p-5 shadow-[10px_10px_24px_rgba(87,66,62,0.12),-10px_-10px_24px_rgba(255,255,255,0.92)]">
       <h2 className="font-display text-lg font-semibold text-on-surface">WebSerial Flasher</h2>
       <p className="mt-1 text-sm text-on-surface-variant">Download firmware, patch SOLCFGv2 fields, and flash via serial.</p>
-
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <label className="text-xs font-semibold text-on-surface-variant">
-          Firmware
-          <select
-            value={firmwareID}
-            onChange={(e) => setFirmwareID(e.target.value)}
-            className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface"
-          >
-            {firmwareVersions.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.template_id}:{f.version}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="text-xs font-semibold text-on-surface-variant">
-          Device
+          Node (Switchboard)
           <select
             value={deviceID}
             onChange={(e) => setDeviceID(e.target.value)}
@@ -176,6 +168,11 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate }: 
         </label>
 
         <label className="text-xs font-semibold text-on-surface-variant">
+          MQTT URI (Auto-Detected)
+          <input value={mqttBrokerUri} onChange={(e) => setMqttBrokerUri(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
+        </label>
+
+        <label className="text-xs font-semibold text-on-surface-variant">
           Wi-Fi SSID
           <input value={wifiSsid} onChange={(e) => setWifiSsid(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
         </label>
@@ -183,26 +180,6 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate }: 
         <label className="text-xs font-semibold text-on-surface-variant">
           Wi-Fi Password
           <input value={wifiPassword} onChange={(e) => setWifiPassword(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
-        </label>
-
-        <label className="text-xs font-semibold text-on-surface-variant">
-          MQTT Broker URI
-          <input value={mqttBrokerUri} onChange={(e) => setMqttBrokerUri(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
-        </label>
-
-        <label className="text-xs font-semibold text-on-surface-variant">
-          Template Mode
-          <input value={templateMode} onChange={(e) => setTemplateMode(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
-        </label>
-
-        <label className="text-xs font-semibold text-on-surface-variant">
-          Relay Pins (4)
-          <input value={relayPins} onChange={(e) => setRelayPins(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
-        </label>
-
-        <label className="text-xs font-semibold text-on-surface-variant">
-          Active-Low Mask
-          <input value={relayActiveLowMask} onChange={(e) => setRelayActiveLowMask(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
         </label>
       </div>
 

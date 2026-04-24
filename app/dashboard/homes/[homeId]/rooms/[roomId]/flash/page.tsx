@@ -14,7 +14,7 @@ export default async function FlashPage({
     solCore.firmware.list(),
   ])
 
-  const flashDevices = devices.map((d) => ({ id: d.id, name: d.name, room_id: d.room_id }))
+  const flashDevices = devices.map((d) => ({ id: d.id, name: d.name, room_id: d.room_id, metadata: d.metadata }))
   const flashFirmware = firmwareVersions.map((f) => ({
     id: f.id,
     template_id: f.template_id,
