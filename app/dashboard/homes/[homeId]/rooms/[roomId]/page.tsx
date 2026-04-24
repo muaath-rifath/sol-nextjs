@@ -63,10 +63,15 @@ export default async function RoomDetailPage({
   const { homeId, roomId } = await params
   const query = await searchParams
 
-  const [room, devices, firmwareVersions, activityRes, appliancesRes] = await Promise.all([
-    solCore.rooms.get(homeId, roomId),
-    solCore.rooms.devices.listAll(homeId, roomId),
-    solCore.firmware.list(),
+  const roomResult = await solCore.rooms.get(homeId, roomId).catch(() => null)
+  if (!roomResult) {
+    redirect(`/dashboard/homes/${homeId}`)
+  }
+  const room = roomResult
+
+  const [devices, firmwareVersions, activityRes, appliancesRes] = await Promise.all([
+    solCore.rooms.devices.listAll(homeId, roomId).catch(() => []),
+    solCore.firmware.list().catch(() => []),
     solCore.rooms.activity(homeId, roomId, 20).catch(() => ({ data: [] })),
     solCore.appliances.listByRoom(homeId, roomId).catch(() => ({ data: [] })),
   ])

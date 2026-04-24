@@ -46,12 +46,12 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate, mq
   }, [selectedDevice, firmwareVersions])
 
   async function onFlash() {
-    if (!selectedFirmware) {
-      setStatus("Select firmware first")
+    if (!deviceID) {
+      setStatus("Select a device first")
       return
     }
-    if (!deviceID) {
-      setStatus("Select device first")
+    if (!selectedFirmware) {
+      setStatus("No firmware binary uploaded yet — go to Manage Firmware and upload one first")
       return
     }
 
@@ -175,10 +175,16 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate, mq
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
+        {!firmwareVersions.length && (
+          <p className="w-full rounded-xl bg-error-container px-3 py-2 text-xs text-on-error-container">
+            No firmware binary found. Upload one on the{" "}
+            <a href="../firmware" className="underline">Manage Firmware</a> page first.
+          </p>
+        )}
         <button
           type="button"
           onClick={onFlash}
-          disabled={isBusy || !firmwareVersions.length || !devices.length}
+          disabled={isBusy || !devices.length}
           className="btn-primary px-4 py-2 text-sm font-semibold disabled:opacity-60"
         >
           {isBusy ? "Flashing..." : "Start Flash"}
