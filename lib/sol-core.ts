@@ -300,8 +300,8 @@ export const solCore = {
       solFetch(`/api/v1/devices/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
-      }).then((r) => r.json()),
-    delete: (id: string) => solFetch(`/api/v1/devices/${id}`, { method: "DELETE" }),
+      }).then((r) => jsonOrNull(r)),
+    delete: (id: string) => solFetch(`/api/v1/devices/${id}`, { method: "DELETE" }).then((r) => jsonOrNull(r)),
     command: (id: string, body: unknown) =>
       solFetch(`/api/v1/devices/${id}/command`, {
         method: "POST",
@@ -376,7 +376,7 @@ export const solCore = {
         solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/devices/${deviceID}/ota`, {
           method: "POST",
           body: JSON.stringify(body),
-        }).then((r) => r.json()),
+        }).then((r) => jsonOrNull(r)),
     },
   },
 
@@ -392,7 +392,7 @@ export const solCore = {
       solFetch(`/api/v1/appliances/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
-      }).then((r) => r.json() as Promise<Appliance>),
+      }).then((r) => jsonOrNull(r)),
     delete: (id: string) =>
       solFetch(`/api/v1/appliances/${id}`, { method: "DELETE" }).then((r) => jsonOrNull(r)),
     listByRoom: (homeID: string, roomID: string) =>
