@@ -312,6 +312,7 @@ export const solCore = {
         solCore.devices.list({ cursor, limit }),
       ),
     get: (id: string) => solFetch(`/api/v1/devices/${id}`).then((r) => r.json()),
+    provision: (id: string) => solFetch(`/api/v1/devices/${id}/provision`).then((r) => r.json()),
     create: (body: unknown) =>
       solFetch("/api/v1/devices", {
         method: "POST",
