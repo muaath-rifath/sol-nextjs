@@ -209,6 +209,17 @@ export interface FirmwareVersion {
   created_at: string
 }
 
+export interface FirmwareBuild {
+  id: string
+  template_id: string
+  target_board: string
+  status: "queued" | "building" | "success" | "failed"
+  logs: string
+  firmware_version_id?: string
+  created_at: string
+  updated_at: string
+}
+
 export interface TelemetryPoint {
   device_id: string
   timestamp: string
@@ -427,8 +438,17 @@ export const solCore = {
         method: "POST",
         body: formData,
       }).then((r) => r.json() as Promise<FirmwareVersion>),
+    build: (templateID: string, targetBoard: string) =>
+      solFetch("/api/v1/firmware/build", {
+        method: "POST",
+        body: JSON.stringify({ template_id: templateID, target_board: targetBoard }),
+      }).then((r) => r.json() as Promise<{ id: string }>),
+    getBuild: (id: string) =>
+      solFetch(`/api/v1/firmware/builds/${id}`).then((r) => r.json() as Promise<FirmwareBuild>),
+    listTargets: () =>
+      solFetch("/api/v1/firmware/targets").then((r) => r.json() as Promise<string[]>),
     presignedUrl: (id: string) =>
-      solFetch(`/api/v1/firmware/${id}/presigned-url`).then((r) =>
+      solFetch(`/api/v1/firmware/versions/${id}/presigned-url`).then((r) =>
         r.json() as Promise<{ url: string }>,
       ),
   },

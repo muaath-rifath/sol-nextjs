@@ -16,7 +16,7 @@ export async function GET(
   }
 
   const { id } = await context.params
-  const upstream = await fetch(`${SOL_CORE_URL}/api/v1/firmware/${id}/download`, {
+  const upstream = await fetch(`${SOL_CORE_URL}/api/v1/firmware/versions/${id}/download`, {
     headers: {
       Authorization: `Bearer ${session.accessToken}`,
     },
