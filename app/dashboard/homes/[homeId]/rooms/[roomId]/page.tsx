@@ -78,7 +78,6 @@ export default async function RoomDetailPage({
 
   const primaryDevice = devices[0]
   const envSensorDevice = devices.find((device) => device.type.toLowerCase().includes("sensor"))
-  const plugDevice = devices.find((device) => device.type.toLowerCase().includes("plug") || device.type.toLowerCase().includes("switch") || device.type.toLowerCase().includes("relay"))
 
   let currentTemp: number | undefined
   let currentHumid: number | undefined
@@ -88,16 +87,6 @@ export default async function RoomDetailPage({
       if (pts?.[0]?.data) {
         currentTemp = pts[0].data.temperature as number
         currentHumid = pts[0].data.humidity as number
-      }
-    } catch { }
-  }
-
-  let currentPower: number | undefined
-  if (plugDevice) {
-    try {
-      const pts = await solCore.devices.getTelemetry(plugDevice.id, 1)
-      if (pts?.[0]?.data) {
-        currentPower = pts[0].data.power_w as number
       }
     } catch { }
   }
@@ -421,34 +410,6 @@ export default async function RoomDetailPage({
               </article>
             )}
 
-            {plugDevice && (
-              <article className="rounded-3xl border border-white/55 bg-surface-container p-5 shadow-[8px_8px_16px_rgba(87,66,62,0.08),-8px_-8px_16px_rgba(255,255,255,0.9)]">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-tertiary-container text-on-tertiary-container shadow-[inset_2px_2px_6px_rgba(255,255,255,0.6),4px_4px_8px_rgba(87,66,62,0.1)]">
-                    <IconBolt size={24} />
-                  </div>
-                  <form action={toggleDeviceAction}>
-                    <input type="hidden" name="device_id" value={plugDevice.id} />
-                    <input
-                      type="hidden"
-                      name="turn_on"
-                      value={coerceBool(plugDevice.state?.isOn) ? "0" : "1"}
-                    />
-                    <button
-                      type="submit"
-                      className={`flex h-8 w-14 items-center rounded-full p-1 ${coerceBool(plugDevice.state?.isOn) ? "justify-end bg-primary" : "bg-surface-container-high"
-                        }`}
-                    >
-                      <span className="h-6 w-6 rounded-full bg-white shadow-[2px_2px_4px_rgba(0,0,0,0.2)]" />
-                    </button>
-                  </form>
-                </div>
-                <h3 className="text-lg font-semibold text-on-surface">Smart Plug</h3>
-                <p className="mt-1 text-sm text-on-surface-variant">
-                  {coerceBool(plugDevice.state?.isOn) ? `Active · ${currentPower?.toFixed(1) ?? "--"}W` : "Off"}
-                </p>
-              </article>
-            )}
 
             <section className="w-full min-w-0 overflow-hidden rounded-3xl border border-white/45 bg-surface-container p-5 shadow-[8px_8px_16px_rgba(87,66,62,0.05),-8px_-8px_16px_rgba(255,255,255,0.8)]">
               <div className="mb-4 flex items-center justify-between border-b border-outline-variant/30 pb-3">
