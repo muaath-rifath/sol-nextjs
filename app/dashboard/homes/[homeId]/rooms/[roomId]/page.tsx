@@ -616,26 +616,28 @@ export default async function RoomDetailPage({
                           </button>
                         </form>
 
-                        <form action={otaAction} className="flex gap-2">
-                          <input type="hidden" name="device_id" value={device.id} />
-                          <select
-                            name="firmware_version_id"
-                            className="clay-inset rounded-xl border border-white/50 px-2 py-2 text-xs text-on-surface"
-                            defaultValue={firmwareVersions[0]?.id}
-                          >
-                            {firmwareVersions.map((fw) => (
-                              <option key={fw.id} value={fw.id}>
-                                {fw.template_id}:{fw.version}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="submit"
-                            className="rounded-xl bg-secondary px-3 py-2 text-xs font-semibold text-on-secondary"
-                          >
-                            OTA Update
-                          </button>
-                        </form>
+                        {firmwareVersions.length > 0 && (
+                          <form action={otaAction} className="flex gap-2">
+                            <input type="hidden" name="device_id" value={device.id} />
+                            <select
+                              name="firmware_version_id"
+                              className="clay-inset rounded-xl border border-white/50 px-2 py-2 text-xs text-on-surface"
+                              defaultValue={firmwareVersions[0]?.id}
+                            >
+                              {firmwareVersions.map((fw) => (
+                                <option key={fw.id} value={fw.id}>
+                                  {fw.template_id}:{fw.version}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="submit"
+                              className="rounded-xl bg-secondary px-3 py-2 text-xs font-semibold text-on-secondary"
+                            >
+                              OTA Update
+                            </button>
+                          </form>
+                        )}
                       </div>
 
                       {/* Associated Appliances */}
