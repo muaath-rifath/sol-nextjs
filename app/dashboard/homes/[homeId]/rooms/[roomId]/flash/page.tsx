@@ -65,6 +65,7 @@ export default async function FlashPage({
           mqttBrokerUrl={process.env.NEXT_PUBLIC_MQTT_BROKER_URL ?? "ssl://mqtt.sol.muaathrifath.me:8883"}
           mqttUsername={process.env.NEXT_PUBLIC_MQTT_USERNAME ?? ""}
           mqttPassword={process.env.NEXT_PUBLIC_MQTT_PASSWORD ?? ""}
+          caCert={process.env.NEXT_PUBLIC_MQTT_CA_CERT ?? ""}
         />
       </div>
     </div>

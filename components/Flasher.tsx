@@ -30,6 +30,7 @@ type Props = {
   mqttBrokerUrl: string
   mqttUsername: string
   mqttPassword: string
+  caCert: string
 }
 
 export default function Flasher({
@@ -39,6 +40,7 @@ export default function Flasher({
   mqttBrokerUrl,
   mqttUsername,
   mqttPassword,
+  caCert,
 }: Props) {
   const [deviceID, setDeviceID] = useState<string>(devices[0]?.id ?? "")
   const [wifiSsid, setWifiSsid] = useState("")
@@ -168,6 +170,15 @@ export default function Flasher({
       }
       const arrayBuffer = await response.arrayBuffer()
       const bytes = new Uint8Array(arrayBuffer)
+
+      addLog("Generating device mTLS certificates...")
+      const provisionResp = await fetch(`/api/v1/devices/${deviceID}/provision`)
+      if (!provisionResp.ok) {
+        const errJson = await provisionResp.json().catch(() => ({}))
+        throw new Error(`Provisioning failed: ${errJson.error || provisionResp.statusText}`)
+      }
+      const certBundle = await provisionResp.json()
+      addLog("Certificates generated successfully.")
       
       setStatus("Patching firmware...")
       addLog("Patching SOLCFGv2 fields...")
@@ -182,6 +193,11 @@ export default function Flasher({
         templateMode: 0,
         relayPins: [12, 13, 14, 15],
         relayActiveLowMask: 0,
+        mtls: {
+          caCert: caCert, // We need to get the Root CA cert to the frontend
+          clientCert: certBundle.CertificatePEM,
+          clientKey: certBundle.PrivateKeyPEM,
+        },
       } as FlashConfig)
 
       setStatus("Flashing with esptool-js...")

@@ -11,6 +11,11 @@ export interface FlashConfig {
   templateMode: number
   relayPins: [number, number, number, number]
   relayActiveLowMask: number
+  mtls?: {
+    caCert: string
+    clientCert: string
+    clientKey: string
+  }
 }
 
 export const PATCH_SIGNATURE = "SOLCFGv2::ESP32"
@@ -98,6 +103,12 @@ export const FIELD_OFFSETS = {
     SLOT_MAP.templateId.fieldSize +
     1 +
     4,
+} as const
+
+export const CERT_OFFSETS = {
+  caCert: 0x0000,
+  clientCert: 0x1000,
+  clientKey: 0x2000,
 } as const
 
 function readUInt32LE(bytes: Uint8Array, offset: number): number {
@@ -196,6 +207,33 @@ export function findConfigBlobOffset(bytes: Uint8Array): number {
   return -1
 }
 
+export function findPartitionOffset(bytes: Uint8Array, label: string): number {
+  const ESP_IMAGE_MAGIC = 0xe9
+  const ESP_PARTITION_TABLE_OFFSET = 0x8000
+  const PARTITION_SIZE = 32
+
+  // The partition table is usually at 0x8000
+  if (bytes.length < ESP_PARTITION_TABLE_OFFSET + PARTITION_SIZE) return -1
+
+  for (let i = 0; i < 95; i++) {
+    const offset = ESP_PARTITION_TABLE_OFFSET + i * PARTITION_SIZE
+    if (offset + PARTITION_SIZE > bytes.length) break
+
+    // Magic bytes for partition table entry (0xAA 0x50)
+    if (bytes[offset] !== 0xaa || bytes[offset + 1] !== 0x50) {
+      if (bytes[offset] === 0xff && bytes[offset + 1] === 0xff) break // End of table
+      continue
+    }
+
+    const partitionLabel = new TextDecoder().decode(bytes.slice(offset + 8, offset + 24)).replace(/\0/g, "")
+    if (partitionLabel === label) {
+      return readUInt32LE(bytes, offset + 24)
+    }
+  }
+
+  return -1
+}
+
 function writeStringField(
   bytes: Uint8Array,
   blobOffset: number,
@@ -260,6 +298,22 @@ export async function patchFirmware(bytes: Uint8Array, config: FlashConfig): Pro
   }
   bytes[blobOffset + FIELD_OFFSETS.relayActiveLowMask] = activeLowMask
   bytes.fill(0, blobOffset + FIELD_OFFSETS.relayActiveLowMask + 1, blobOffset + PATCH_BLOB_SIZE)
+
+  // Patch certificates if provided
+  if (config.mtls) {
+    const certsOffset = findPartitionOffset(bytes, "certs")
+    if (certsOffset >= 0) {
+      const writeCert = (offset: number, value: string) => {
+        const valBytes = encoder.encode(value + "\0")
+        if (valBytes.length > 0x1000) throw new Error("Certificate/Key exceeds 4KB slot size")
+        bytes.fill(0, certsOffset + offset, certsOffset + offset + 0x1000)
+        bytes.set(valBytes, certsOffset + offset)
+      }
+      writeCert(CERT_OFFSETS.caCert, config.mtls.caCert)
+      writeCert(CERT_OFFSETS.clientCert, config.mtls.clientCert)
+      writeCert(CERT_OFFSETS.clientKey, config.mtls.clientKey)
+    }
+  }
 
   recomputeEspImageChecksum(bytes)
 
