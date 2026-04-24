@@ -10,6 +10,7 @@ import {
   IconWifi,
   IconWifiOff,
 } from "@tabler/icons-react"
+import ClearSearchParams from "@/components/ClearSearchParams"
 import Link from "next/link"
 import { redirect, unstable_rethrow } from "next/navigation"
 
@@ -299,6 +300,9 @@ export default async function RoomDetailPage({
           </div>
         </header>
 
+        {(query.notice || query.error) && (
+          <ClearSearchParams keys={["notice", "error"]} />
+        )}
         {query.notice ? (
           <p className="rounded-2xl border border-tertiary-fixed-dim bg-tertiary-fixed px-4 py-3 text-sm text-on-tertiary-fixed">
             {query.notice}
