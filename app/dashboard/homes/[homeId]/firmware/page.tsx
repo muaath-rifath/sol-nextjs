@@ -1,6 +1,9 @@
 import { solCore } from "@/lib/sol-core"
 import Link from "next/link"
 import { redirect, unstable_rethrow } from "next/navigation"
+import FirmwareBuildModal from "@/components/FirmwareBuildModal"
+
+export const dynamic = "force-dynamic"
 
 type FirmwarePageSearchParams = Promise<{
   template_id?: string
@@ -39,8 +42,8 @@ export default async function FirmwarePage({
   const templateID = query.template_id?.trim() || undefined
 
   const [firmwareVersions, rooms] = await Promise.all([
-    solCore.firmware.list(templateID),
-    solCore.rooms.listAll(homeId),
+    solCore.firmware.list(templateID).catch(() => []),
+    solCore.rooms.listAll(homeId).catch(() => []),
   ])
 
   const roomDevices = new Map<string, Awaited<ReturnType<typeof solCore.rooms.devices.listAll>>>()
@@ -122,7 +125,12 @@ export default async function FirmwarePage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Firmware</p>
-              <h1 className="font-display mt-2 text-3xl font-semibold tracking-tight text-on-surface">Firmware Versions</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="font-display mt-2 text-3xl font-semibold tracking-tight text-on-surface">Firmware Versions</h1>
+                <span className="mt-2 rounded-full bg-surface-container-high px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant shadow-sm">
+                  Source Build Enabled
+                </span>
+              </div>
             </div>
             <Link href={`/dashboard/homes/${homeId}`} className="btn-outline px-3 py-1.5 text-sm">
               Back to home
@@ -170,6 +178,14 @@ export default async function FirmwarePage({
                 Upload
               </button>
             </form>
+
+            <div className="mt-6 border-t border-white/20 pt-6">
+              <h2 className="font-display text-lg font-semibold text-on-surface">Build from Source</h2>
+              <p className="mt-1 text-sm text-on-surface-variant mb-4">
+                Compile generic firmware directly for a specific board.
+              </p>
+              <FirmwareBuildModal templateId={templateID} homeId={homeId} />
+            </div>
           </aside>
 
           <section className="clay-raised rounded-3xl p-5">

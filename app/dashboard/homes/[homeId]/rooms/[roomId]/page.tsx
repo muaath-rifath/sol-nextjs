@@ -14,6 +14,8 @@ import ClearSearchParams from "@/components/ClearSearchParams"
 import Link from "next/link"
 import { redirect, unstable_rethrow } from "next/navigation"
 
+export const dynamic = "force-dynamic"
+
 type RoomPageSearchParams = Promise<{
   notice?: string
   error?: string
@@ -65,7 +67,7 @@ export default async function RoomDetailPage({
 
   const roomResult = await solCore.rooms.get(homeId, roomId).catch(() => null)
   if (!roomResult) {
-    redirect(`/dashboard/homes/${homeId}`)
+    redirect(`/dashboard/homes/${homeId}?error=Room+not+found`)
   }
   const room = roomResult
 

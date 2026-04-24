@@ -23,6 +23,8 @@ import type { ForwardRefExoticComponent, RefAttributes } from "react"
 import type { IconProps } from "@tabler/icons-react"
 import HomeSwitcher from "@/components/HomeSwitcher"
 
+export const dynamic = "force-dynamic"
+
 type HomePageSearchParams = Promise<{
   notice?: string
   error?: string
@@ -99,7 +101,7 @@ export default async function HomeDetailPage({
 
   const currentHome = allHomes.data.find((home) => home.id === homeId)
 
-  const rooms = await solCore.rooms.listAll(homeId)
+  const rooms = (await solCore.rooms.listAll(homeId).catch(() => [])) as Room[]
   const roomDevices = new Map<string, RoomDevice[]>()
 
   await Promise.all(

@@ -184,7 +184,7 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate, mq
         <button
           type="button"
           onClick={onFlash}
-          disabled={isBusy || !devices.length}
+          disabled={isBusy || !devices.length || !firmwareVersions.length}
           className="btn-primary px-4 py-2 text-sm font-semibold disabled:opacity-60"
         >
           {isBusy ? "Flashing..." : "Start Flash"}
