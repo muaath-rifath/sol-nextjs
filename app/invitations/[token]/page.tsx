@@ -95,39 +95,39 @@ export default async function InvitationPage({
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e9fff8_0%,#f8fffd_45%,#fef7f0_100%)] px-4 py-10">
-      <div className="mx-auto w-full max-w-2xl rounded-3xl border border-stone-200 bg-white/90 p-8 shadow-sm backdrop-blur-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Sol Invitation</p>
+    <div className="bg-clay-canvas min-h-screen px-4 py-10">
+      <div className="mx-auto w-full max-w-2xl rounded-[2rem] border border-white/55 bg-surface-container-low p-8 shadow-[12px_12px_28px_rgba(87,66,62,0.14),-12px_-12px_28px_rgba(255,255,255,0.92)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">SOL Next</p>
 
         {query.notice ? (
-          <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            {query.notice}
-          </p>
-        ) : null}
+            <p className="mt-4 rounded-xl border border-tertiary-fixed-dim bg-tertiary-fixed px-4 py-3 text-sm text-on-tertiary-fixed">
+              {query.notice}
+            </p>
+          ) : null}
 
         {query.error ? (
-          <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-            {query.error}
-          </p>
-        ) : null}
+            <p className="mt-4 rounded-xl border border-error bg-error-container px-4 py-3 text-sm text-on-error-container">
+              {query.error}
+            </p>
+          ) : null}
 
         {invitationError || !invitation ? (
-          <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-6">
-            <h1 className="text-2xl font-semibold tracking-tight text-rose-900">Invitation unavailable</h1>
-            <p className="mt-2 text-sm text-rose-800">
+          <div className="mt-4 rounded-2xl border border-error bg-error-container p-6">
+            <h1 className="font-display text-2xl font-semibold tracking-tight text-on-error-container">Invitation unavailable</h1>
+            <p className="mt-2 text-sm text-on-error-container">
               {invitationError ?? "This invitation was not found or has already expired."}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href="/"
-                className="rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-800 transition hover:border-rose-500"
+                className="btn-outline px-4 py-2 text-sm font-semibold"
               >
                 Go to sign-in
               </Link>
               {session ? (
                 <Link
                   href="/dashboard"
-                  className="rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:border-stone-500"
+                  className="btn-outline px-4 py-2 text-sm font-semibold"
                 >
                   Open dashboard
                 </Link>
@@ -136,10 +136,10 @@ export default async function InvitationPage({
           </div>
         ) : (
           <>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-stone-900">
-              You were invited to join <span className="text-teal-700">{invitation.home_name}</span>
+            <h1 className="font-display mt-4 text-3xl font-semibold tracking-tight text-on-surface">
+              You were invited to join <span className="text-primary">{invitation.home_name}</span>
             </h1>
-            <p className="mt-3 text-sm text-stone-600">
+            <p className="mt-3 text-sm text-on-surface-variant">
               <strong>{invitation.inviter_name}</strong> invited <strong>{invitation.invitee_email}</strong>.
               This invitation expires on {new Date(invitation.expires_at).toLocaleString()}.
             </p>
@@ -150,7 +150,7 @@ export default async function InvitationPage({
                   <form action={acceptAction}>
                     <button
                       type="submit"
-                      className="rounded-full bg-gradient-to-r from-teal-600 to-cyan-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:from-teal-700 hover:to-cyan-700"
+                      className="btn-primary rounded-full px-5 py-2.5 text-sm font-semibold"
                     >
                       Accept invitation
                     </button>
@@ -158,23 +158,23 @@ export default async function InvitationPage({
                   <form action={declineAction}>
                     <button
                       type="submit"
-                      className="rounded-full border border-rose-300 px-5 py-2.5 text-sm font-semibold text-rose-700 transition hover:border-rose-500"
+                      className="rounded-full border border-error px-5 py-2.5 text-sm font-semibold text-error transition hover:bg-error-container"
                     >
                       Decline invitation
                     </button>
                   </form>
                 </div>
               ) : (
-                <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <div className="mt-6 rounded-2xl border border-secondary-fixed-dim bg-secondary-fixed p-4">
                   {invitation.invitee_is_user ? (
                     <>
-                      <p className="text-sm text-amber-900">
+                      <p className="text-sm text-on-secondary-fixed">
                         Sign in with the invited account email to accept this invitation.
                       </p>
                       <form action={signInAction} className="mt-3">
                         <button
                           type="submit"
-                          className="rounded-full bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-700"
+                          className="rounded-full bg-secondary px-5 py-2.5 text-sm font-semibold text-on-secondary transition hover:brightness-105"
                         >
                           Sign in to continue
                         </button>
@@ -182,14 +182,14 @@ export default async function InvitationPage({
                     </>
                   ) : (
                     <>
-                      <p className="text-sm text-amber-900">
+                      <p className="text-sm text-on-secondary-fixed">
                         Create an account with the invited email. After sign up, we will
                         automatically finish accepting this invitation.
                       </p>
                       <form action={signUpAction} className="mt-3">
                         <button
                           type="submit"
-                          className="rounded-full bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-700"
+                          className="rounded-full bg-secondary px-5 py-2.5 text-sm font-semibold text-on-secondary transition hover:brightness-105"
                         >
                           Sign up to continue
                         </button>
@@ -197,7 +197,7 @@ export default async function InvitationPage({
                       <form action={signInAction} className="mt-2">
                         <button
                           type="submit"
-                          className="rounded-full border border-stone-300 px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-stone-500"
+                          className="btn-outline px-5 py-2.5 text-sm font-semibold"
                         >
                           I already have an account
                         </button>
@@ -207,7 +207,7 @@ export default async function InvitationPage({
                   <form action={declineAction} className="mt-2">
                     <button
                       type="submit"
-                      className="rounded-full border border-stone-300 px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-stone-500"
+                      className="btn-outline px-5 py-2.5 text-sm font-semibold"
                     >
                       Decline without account
                     </button>
@@ -215,8 +215,8 @@ export default async function InvitationPage({
                 </div>
               )
             ) : (
-              <div className="mt-6 rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                <p className="text-sm text-stone-800">
+              <div className="mt-6 rounded-2xl border border-outline-variant bg-surface-container p-4">
+                <p className="text-sm text-on-surface">
                   {invitation.status === "accepted"
                     ? "This invitation was already accepted."
                     : invitation.status === "declined"
@@ -226,13 +226,13 @@ export default async function InvitationPage({
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Link
                     href="/dashboard"
-                    className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700"
+                    className="btn-primary rounded-full px-4 py-2 text-sm font-semibold"
                   >
                     Open dashboard
                   </Link>
                   <Link
                     href="/"
-                    className="rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:border-stone-500"
+                    className="btn-outline px-4 py-2 text-sm font-semibold"
                   >
                     Go to home
                   </Link>

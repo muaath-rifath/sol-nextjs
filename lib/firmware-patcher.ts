@@ -1,4 +1,4 @@
-export type FirmwareTemplateId = "rgb_led" | "relay_single" | "relay_4ch_gpio"
+export type FirmwareTemplateId = "rgb_led" | "relay_single" | "relay_4ch_gpio" | "env_sensor" | "smart_plug"
 
 export interface FlashConfig {
   wifiSsid: string

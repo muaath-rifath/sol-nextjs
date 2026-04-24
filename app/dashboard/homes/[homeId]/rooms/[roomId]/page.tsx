@@ -1,4 +1,15 @@
 import { solCore } from "@/lib/sol-core"
+import {
+  IconActivity,
+  IconArrowLeft,
+  IconBolt,
+  IconCloudDownload,
+  IconCpu,
+  IconTool,
+  IconUsb,
+  IconWifi,
+  IconWifiOff,
+} from "@tabler/icons-react"
 import Link from "next/link"
 import { redirect, unstable_rethrow } from "next/navigation"
 
@@ -33,6 +44,14 @@ function coerceBool(value: unknown): boolean {
   return false
 }
 
+function formatUptime(ms?: number): string {
+  if (!ms) return "--"
+  const d = Math.floor(ms / (1000 * 60 * 60 * 24))
+  const h = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, "0")
+  const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, "0")
+  return `${d}d ${h}h ${m}m`
+}
+
 export default async function RoomDetailPage({
   params,
   searchParams,
@@ -43,32 +62,89 @@ export default async function RoomDetailPage({
   const { homeId, roomId } = await params
   const query = await searchParams
 
-  const [room, devices, firmwareVersions] = await Promise.all([
+  const [room, devices, firmwareVersions, activityRes, appliancesRes] = await Promise.all([
     solCore.rooms.get(homeId, roomId),
     solCore.rooms.devices.listAll(homeId, roomId),
     solCore.firmware.list(),
+    solCore.rooms.activity(homeId, roomId, 20).catch(() => ({ data: [] })),
+    solCore.appliances.listByRoom(homeId, roomId).catch(() => ({ data: [] })),
   ])
+  const activityLogs = activityRes?.data || []
+  const appliances = appliancesRes?.data || []
+
+  const onlineCount = devices.filter((device) => device.online).length
+  const activeCount = devices.filter((device) => coerceBool(device.state?.isOn)).length
+
+  const primaryDevice = devices[0]
+  const envSensorDevice = devices.find((device) => device.type.toLowerCase().includes("sensor"))
+  const plugDevice = devices.find((device) => device.type.toLowerCase().includes("plug") || device.type.toLowerCase().includes("switch") || device.type.toLowerCase().includes("relay"))
+
+  let currentTemp: number | undefined
+  let currentHumid: number | undefined
+  if (envSensorDevice) {
+    try {
+      const pts = await solCore.devices.getTelemetry(envSensorDevice.id, 1)
+      if (pts?.[0]?.data) {
+        currentTemp = pts[0].data.temperature as number
+        currentHumid = pts[0].data.humidity as number
+      }
+    } catch { }
+  }
+
+  let currentPower: number | undefined
+  if (plugDevice) {
+    try {
+      const pts = await solCore.devices.getTelemetry(plugDevice.id, 1)
+      if (pts?.[0]?.data) {
+        currentPower = pts[0].data.power_w as number
+      }
+    } catch { }
+  }
 
   async function addDeviceAction(formData: FormData) {
     "use server"
     const name = String(formData.get("name") ?? "").trim()
-    const type = String(formData.get("type") ?? "custom").trim()
-    const gpioPin = String(formData.get("gpio_pin") ?? "").trim()
-    const channel = String(formData.get("channel") ?? "").trim()
-    const activeLow = String(formData.get("active_low") ?? "").trim()
+    const firmwareId = String(formData.get("firmware_id") ?? "").trim()
 
     if (!name) {
-      redirect(roomHref(homeId, roomId, { error: "Device name is required" }))
+      redirect(roomHref(homeId, roomId, { error: "Switchboard name is required" }))
     }
 
-    const metadata: Record<string, string> = {}
-    if (gpioPin) metadata.gpio_pin = gpioPin
-    if (channel) metadata.channel = channel
-    if (activeLow) metadata.active_low = activeLow
+    try {
+      await solCore.rooms.devices.create(homeId, roomId, {
+        name,
+        type: "switchboard",
+        metadata: firmwareId ? { firmware_id: firmwareId } : {},
+      })
+      redirect(roomHref(homeId, roomId, { notice: "Node created" }))
+    } catch (error) {
+      unstable_rethrow(error)
+      redirect(roomHref(homeId, roomId, { error: errorMessage(error) }))
+    }
+  }
+
+  async function addApplianceAction(formData: FormData) {
+    "use server"
+    const deviceID = String(formData.get("device_id") ?? "").trim()
+    const name = String(formData.get("name") ?? "").trim()
+    const type = String(formData.get("type") ?? "custom").trim()
+    const channelStr = String(formData.get("channel") ?? "").trim()
+    const activeLow = String(formData.get("active_low") ?? "") === "true"
+
+    if (!name || !deviceID) {
+      redirect(roomHref(homeId, roomId, { error: "Appliance name and switchboard are required" }))
+    }
 
     try {
-      await solCore.rooms.devices.create(homeId, roomId, { name, type, metadata })
-      redirect(roomHref(homeId, roomId, { notice: "Device created" }))
+      await solCore.appliances.create({
+        device_id: deviceID,
+        room_id: roomId,
+        name,
+        type,
+        channel: channelStr ? parseInt(channelStr, 10) : undefined,
+        active_low: activeLow,
+      })
+      redirect(roomHref(homeId, roomId, { notice: "Appliance created" }))
     } catch (error) {
       unstable_rethrow(error)
       redirect(roomHref(homeId, roomId, { error: errorMessage(error) }))
@@ -78,15 +154,20 @@ export default async function RoomDetailPage({
   async function toggleDeviceAction(formData: FormData) {
     "use server"
     const deviceID = String(formData.get("device_id") ?? "").trim()
+    const channelStr = String(formData.get("channel") ?? "").trim()
     const turnOn = String(formData.get("turn_on") ?? "") === "1"
+
     if (!deviceID) {
       redirect(roomHref(homeId, roomId, { error: "Missing device id" }))
     }
 
     try {
+      const params: Record<string, unknown> = { isOn: turnOn }
+      if (channelStr) params.channel = parseInt(channelStr, 10)
+
       await solCore.rooms.devices.command(homeId, roomId, deviceID, {
         action: "set_relay",
-        params: { isOn: turnOn },
+        params,
       })
       redirect(roomHref(homeId, roomId, { notice: "Command sent" }))
     } catch (error) {
@@ -99,6 +180,7 @@ export default async function RoomDetailPage({
     "use server"
     const deviceID = String(formData.get("device_id") ?? "").trim()
     const name = String(formData.get("name") ?? "").trim()
+
     if (!deviceID || !name) {
       redirect(roomHref(homeId, roomId, { error: "Missing device update data" }))
     }
@@ -115,6 +197,7 @@ export default async function RoomDetailPage({
   async function deleteDeviceAction(formData: FormData) {
     "use server"
     const deviceID = String(formData.get("device_id") ?? "").trim()
+
     if (!deviceID) {
       redirect(roomHref(homeId, roomId, { error: "Missing device id" }))
     }
@@ -128,10 +211,46 @@ export default async function RoomDetailPage({
     }
   }
 
+  async function updateApplianceAction(formData: FormData) {
+    "use server"
+    const applianceID = String(formData.get("appliance_id") ?? "").trim()
+    const name = String(formData.get("name") ?? "").trim()
+
+    if (!applianceID || !name) {
+      redirect(roomHref(homeId, roomId, { error: "Missing appliance update data" }))
+    }
+
+    try {
+      await solCore.appliances.update(applianceID, { name })
+      redirect(roomHref(homeId, roomId, { notice: "Appliance updated" }))
+    } catch (error) {
+      unstable_rethrow(error)
+      redirect(roomHref(homeId, roomId, { error: errorMessage(error) }))
+    }
+  }
+
+  async function deleteApplianceAction(formData: FormData) {
+    "use server"
+    const applianceID = String(formData.get("appliance_id") ?? "").trim()
+
+    if (!applianceID) {
+      redirect(roomHref(homeId, roomId, { error: "Missing appliance id" }))
+    }
+
+    try {
+      await solCore.appliances.delete(applianceID)
+      redirect(roomHref(homeId, roomId, { notice: "Appliance deleted" }))
+    } catch (error) {
+      unstable_rethrow(error)
+      redirect(roomHref(homeId, roomId, { error: errorMessage(error) }))
+    }
+  }
+
   async function otaAction(formData: FormData) {
     "use server"
     const deviceID = String(formData.get("device_id") ?? "").trim()
     const firmwareVersionID = String(formData.get("firmware_version_id") ?? "").trim()
+
     if (!deviceID || !firmwareVersionID) {
       redirect(roomHref(homeId, roomId, { error: "Device and firmware are required" }))
     }
@@ -148,71 +267,301 @@ export default async function RoomDetailPage({
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fffdf6_0%,#f7fcff_45%,#f2fff8_100%)] px-4 py-8 sm:px-8">
-      <div className="mx-auto w-full max-w-6xl space-y-6">
-        <header className="rounded-3xl border border-stone-200 bg-white/90 p-6">
+    <div className="bg-clay-canvas min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl space-y-6">
+        <header className="rounded-[2rem] border border-white/60 bg-surface-container-low p-6 shadow-[10px_10px_24px_rgba(87,66,62,0.12),-10px_-10px_24px_rgba(255,255,255,0.92)]">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">Room</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-stone-900">{room.name}</h1>
-              <p className="mt-1 text-sm text-stone-600">Floor: {room.floor ?? "-"}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Room Detail</p>
+              <h1 className="font-display mt-2 text-3xl font-semibold tracking-tight text-on-surface">
+                {room.name}
+              </h1>
+              <p className="mt-1 text-sm text-on-surface-variant">
+                Manage central hub connectivity and adjust ambient settings.
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link href={`/dashboard/homes/${homeId}`} className="rounded-full border border-stone-300 px-3 py-1.5 text-sm text-stone-700">
+              <Link
+                href={`/dashboard/homes/${homeId}`}
+                className="inline-flex items-center gap-2 rounded-full border border-outline-variant bg-surface px-4 py-2 text-sm font-medium text-on-surface-variant"
+              >
+                <IconArrowLeft size={16} />
                 Back to home
               </Link>
               <Link
                 href={`/dashboard/homes/${homeId}/rooms/${roomId}/flash`}
-                className="rounded-full bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white"
+                className="btn-primary inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
               >
-                Flash Firmware
+                <IconUsb size={16} />
+                Flash via USB
               </Link>
             </div>
           </div>
         </header>
 
         {query.notice ? (
-          <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{query.notice}</p>
+          <p className="rounded-2xl border border-tertiary-fixed-dim bg-tertiary-fixed px-4 py-3 text-sm text-on-tertiary-fixed">
+            {query.notice}
+          </p>
         ) : null}
         {query.error ? (
-          <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{query.error}</p>
+          <p className="rounded-2xl border border-error bg-error-container px-4 py-3 text-sm text-on-error-container">
+            {query.error}
+          </p>
         ) : null}
 
-        <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-          <aside className="rounded-3xl border border-stone-200 bg-white/90 p-5">
-            <h2 className="text-lg font-semibold text-stone-900">Add Device</h2>
-            <form action={addDeviceAction} className="mt-3 space-y-3">
-              <input
-                type="text"
-                name="name"
-                required
-                placeholder="Device name"
-                className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm"
-              />
-              <select name="type" className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm">
-                <option value="light">light</option>
-                <option value="switch">switch</option>
-                <option value="sensor">sensor</option>
-                <option value="lock">lock</option>
-                <option value="fan">fan</option>
-                <option value="custom">custom</option>
-              </select>
-              <input type="text" name="gpio_pin" placeholder="gpio_pin" className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm" />
-              <input type="text" name="channel" placeholder="channel" className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm" />
-              <input type="text" name="active_low" placeholder="active_low" className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm" />
-              <button
-                type="submit"
-                className="w-full rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 px-4 py-2 text-sm font-semibold text-white"
-              >
-                Create device
-              </button>
-            </form>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <section className="relative overflow-hidden rounded-3xl border border-white/60 bg-surface-container p-7 shadow-[12px_12px_24px_rgba(87,66,62,0.08),-12px_-12px_24px_rgba(255,255,255,0.9)] lg:col-span-2">
+            <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary-container/30 blur-[72px]" />
+
+            <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/50 bg-surface shadow-[inset_2px_2px_4px_rgba(255,255,255,0.8),4px_4px_12px_rgba(87,66,62,0.1)]">
+                  <IconCpu size={30} className="text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-display text-2xl font-semibold text-on-surface">Main Switchboard</h2>
+                  <div className="mt-1 inline-flex items-center gap-2 rounded-full bg-surface-container-low px-3 py-1 text-xs text-on-surface-variant shadow-[inset_2px_2px_4px_rgba(87,66,62,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.9)]">
+                    <span className={`h-2.5 w-2.5 rounded-full ${onlineCount > 0 ? "bg-emerald-500" : "bg-stone-400"}`} />
+                    {onlineCount > 0 ? "Online" : "Offline"} • ESP32 Node
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-full border border-white/40 bg-surface p-3 text-primary shadow-[4px_4px_8px_rgba(87,66,62,0.05),-4px_-4px_8px_rgba(255,255,255,0.8)]">
+                {onlineCount > 0 ? <IconWifi size={20} /> : <IconWifiOff size={20} />}
+              </div>
+            </div>
+
+            <div className="relative z-10 mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-white/30 bg-surface-container-high p-4 shadow-[inset_4px_4px_8px_rgba(87,66,62,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.8)]">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-outline">IP Address</p>
+                <p className="mt-1 text-lg font-semibold text-on-surface">{(primaryDevice?.state?.ip_address as string) || "Unknown"}</p>
+              </div>
+              <div className="rounded-xl border border-white/30 bg-surface-container-high p-4 shadow-[inset_4px_4px_8px_rgba(87,66,62,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.8)]">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-outline">Firmware</p>
+                <p className="mt-1 truncate text-lg font-semibold text-on-surface">{(primaryDevice?.state?.templateId as string) || "No firmware"}</p>
+              </div>
+              <div className="rounded-xl border border-white/30 bg-surface-container-high p-4 shadow-[inset_4px_4px_8px_rgba(87,66,62,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.8)]">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-outline">Uptime</p>
+                <p className="mt-1 text-lg font-semibold text-on-surface">{formatUptime(primaryDevice?.state?.ts as number)}</p>
+              </div>
+            </div>
+
+            <div className="relative z-10 mt-8 border-t border-outline-variant/35 pt-6">
+              <h3 className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-on-surface-variant">
+                <IconTool size={15} />
+                Device Maintenance
+              </h3>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {primaryDevice ? (
+                  <form action={otaAction} className="contents">
+                    <input type="hidden" name="device_id" value={primaryDevice.id} />
+                    <input
+                      type="hidden"
+                      name="firmware_version_id"
+                      value={firmwareVersions[0]?.id ?? ""}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!firmwareVersions[0]}
+                      className="group flex items-center gap-3 rounded-xl border border-white/40 bg-primary-container p-4 text-on-primary-container shadow-[6px_6px_16px_rgba(165,59,41,0.2),-6px_-6px_16px_rgba(255,255,255,0.9)] transition hover:scale-[1.01] disabled:opacity-60"
+                    >
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-surface/30 shadow-[inset_2px_2px_4px_rgba(255,255,255,0.5)]">
+                        <IconCloudDownload size={20} />
+                      </span>
+                      <span className="text-left">
+                        <span className="block text-base font-semibold leading-tight">OTA Update</span>
+                        <span className="block text-xs opacity-80">Flash remotely via Wi-Fi</span>
+                      </span>
+                    </button>
+                  </form>
+                ) : (
+                  <div className="rounded-xl border border-outline-variant/40 bg-surface p-4 text-sm text-on-surface-variant">
+                    Add a device to use OTA actions.
+                  </div>
+                )}
+
+                <Link
+                  href={`/dashboard/homes/${homeId}/rooms/${roomId}/flash`}
+                  className="flex items-center gap-3 rounded-xl border border-outline-variant/40 bg-surface p-4 text-primary shadow-[4px_4px_12px_rgba(87,66,62,0.06),-4px_-4px_12px_rgba(255,255,255,0.8)]"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-high shadow-[inset_2px_2px_4px_rgba(87,66,62,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.8)]">
+                    <IconUsb size={20} />
+                  </span>
+                  <span className="text-left">
+                    <span className="block text-base font-semibold text-on-surface">Flash via USB</span>
+                    <span className="block text-xs text-outline">Local WebSerial connection</span>
+                  </span>
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          <aside className="grid w-full min-w-0 gap-6">
+            {envSensorDevice && (
+              <article className="rounded-3xl border border-white/55 bg-surface-container p-5 shadow-[8px_8px_16px_rgba(87,66,62,0.08),-8px_-8px_16px_rgba(255,255,255,0.9)]">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary-container text-on-secondary-container shadow-[inset_2px_2px_6px_rgba(255,255,255,0.6),4px_4px_8px_rgba(87,66,62,0.1)]">
+                    <IconActivity size={24} />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-on-surface">Climate</h3>
+                <p className="mt-1 text-sm text-on-surface-variant">
+                  {`${currentTemp?.toFixed(1) ?? "--"}°C · ${currentHumid?.toFixed(1) ?? "--"}% RH`}
+                </p>
+                <div className="mt-4 rounded-full bg-surface-container-high p-1.5 shadow-[inset_4px_4px_8px_rgba(87,66,62,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.8)]">
+                  <div className="h-5 rounded-full bg-secondary shadow-[2px_0_6px_rgba(87,66,62,0.2),inset_1px_1px_2px_rgba(255,255,255,0.4)]" style={{ width: `${currentTemp ? Math.min(100, Math.max(0, ((currentTemp - 10) / 30) * 100)) : 0}%` }} />
+                </div>
+              </article>
+            )}
+
+            {plugDevice && (
+              <article className="rounded-3xl border border-white/55 bg-surface-container p-5 shadow-[8px_8px_16px_rgba(87,66,62,0.08),-8px_-8px_16px_rgba(255,255,255,0.9)]">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-tertiary-container text-on-tertiary-container shadow-[inset_2px_2px_6px_rgba(255,255,255,0.6),4px_4px_8px_rgba(87,66,62,0.1)]">
+                    <IconBolt size={24} />
+                  </div>
+                  <form action={toggleDeviceAction}>
+                    <input type="hidden" name="device_id" value={plugDevice.id} />
+                    <input
+                      type="hidden"
+                      name="turn_on"
+                      value={coerceBool(plugDevice.state?.isOn) ? "0" : "1"}
+                    />
+                    <button
+                      type="submit"
+                      className={`flex h-8 w-14 items-center rounded-full p-1 ${coerceBool(plugDevice.state?.isOn) ? "justify-end bg-primary" : "bg-surface-container-high"
+                        }`}
+                    >
+                      <span className="h-6 w-6 rounded-full bg-white shadow-[2px_2px_4px_rgba(0,0,0,0.2)]" />
+                    </button>
+                  </form>
+                </div>
+                <h3 className="text-lg font-semibold text-on-surface">Smart Plug</h3>
+                <p className="mt-1 text-sm text-on-surface-variant">
+                  {coerceBool(plugDevice.state?.isOn) ? `Active · ${currentPower?.toFixed(1) ?? "--"}W` : "Off"}
+                </p>
+              </article>
+            )}
+
+            <section className="w-full min-w-0 overflow-hidden rounded-3xl border border-white/45 bg-surface-container p-5 shadow-[8px_8px_16px_rgba(87,66,62,0.05),-8px_-8px_16px_rgba(255,255,255,0.8)]">
+              <div className="mb-4 flex items-center justify-between border-b border-outline-variant/30 pb-3">
+                <h3 className="font-display text-lg sm:text-xl font-semibold text-on-surface">Recent Activity</h3>
+                <span className="shrink-0 text-xs font-medium text-primary">Live logs</span>
+              </div>
+
+              <div className="w-full space-y-3">
+                {activityLogs.length === 0 ? (
+                  <p className="text-sm text-outline px-2">No recent activity.</p>
+                ) : activityLogs.map((log, index) => (
+                  <div key={index} className="flex w-full items-center gap-3 overflow-hidden rounded-xl border border-white/40 bg-surface p-3 shadow-[inset_2px_2px_6px_rgba(87,66,62,0.03),inset_-2px_-2px_6px_rgba(255,255,255,0.9)]">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-container-high ${log.badge_text === "Success" || log.badge_text === "Online" ? "text-tertiary" : "text-error"}`}>
+                      {log.badge_text === "Success" || log.badge_text === "Online" ? <IconCloudDownload size={17} /> : <IconWifiOff size={17} />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-on-surface">{log.title}</p>
+                      <p className="truncate mt-0.5 text-xs text-outline">{new Date(log.timestamp).toLocaleString()} • {log.description}</p>
+                    </div>
+                    <span className={`shrink-0 rounded-full border border-white/55 px-2 py-1 text-[10px] font-medium sm:px-3 sm:text-xs ${log.badge_color}`}>
+                      {log.badge_text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+          <aside className="clay-raised rounded-3xl p-5">
+            <div className="space-y-6">
+              <div>
+                <h2 className="font-display text-lg font-semibold text-on-surface">Add Switchboard</h2>
+                <form action={addDeviceAction} className="mt-3 space-y-3">
+                  <input
+                    type="text"
+                    name="name"
+                    required
+                    placeholder="Switchboard name"
+                    className="clay-inset w-full rounded-xl border border-white/50 px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant"
+                  />
+                  <select
+                    name="firmware_id"
+                    className="clay-inset w-full rounded-xl border border-white/50 px-3 py-2 text-sm text-on-surface"
+                  >
+                    <option value="">Select Firmware (Optional)</option>
+                    {firmwareVersions.map((fw) => (
+                      <option key={fw.id} value={fw.id}>
+                        {fw.template_id}
+                      </option>
+                    ))}
+                  </select>
+                  <button type="submit" className="btn-primary inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold">
+                    <IconBolt size={16} />
+                    Create Node
+                  </button>
+                </form>
+              </div>
+
+              {devices.length > 0 && (
+                <div>
+                  <h2 className="font-display text-lg font-semibold text-on-surface">Add Appliance</h2>
+                  <form action={addApplianceAction} className="mt-3 space-y-3">
+                    <input
+                      type="text"
+                      name="name"
+                      required
+                      placeholder="Appliance name"
+                      className="clay-inset w-full rounded-xl border border-white/50 px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant"
+                    />
+                    <select
+                      name="device_id"
+                      required
+                      className="clay-inset w-full rounded-xl border border-white/50 px-3 py-2 text-sm text-on-surface"
+                    >
+                      <option value="">Select Switchboard</option>
+                      {devices.map((device) => (
+                        <option key={device.id} value={device.id}>
+                          {device.name}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      name="type"
+                      className="clay-inset w-full rounded-xl border border-white/50 px-3 py-2 text-sm text-on-surface"
+                    >
+                      <option value="light">light</option>
+                      <option value="switch">switch</option>
+                      <option value="fan">fan</option>
+                      <option value="lock">lock</option>
+                      <option value="sensor">sensor</option>
+                    </select>
+                    <input
+                      type="number"
+                      name="channel"
+                      placeholder="Relay Channel (0-3)"
+                      className="clay-inset w-full rounded-xl border border-white/50 px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant"
+                    />
+                    <div className="flex items-center gap-2 px-2 pb-1">
+                      <input type="checkbox" name="active_low" value="true" id="active_low" />
+                      <label htmlFor="active_low" className="text-sm text-on-surface-variant">Active Low Mapping</label>
+                    </div>
+                    <button type="submit" className="btn-outline inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold">
+                      <IconTool size={16} />
+                      Create Appliance
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
           </aside>
 
-          <section className="rounded-3xl border border-stone-200 bg-white/90 p-5">
-            <h2 className="text-lg font-semibold text-stone-900">Devices</h2>
+          <section className="clay-raised rounded-3xl p-5">
+            <h2 className="font-display text-lg font-semibold text-on-surface">Devices</h2>
             {devices.length === 0 ? (
-              <p className="mt-3 rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+              <p className="mt-3 rounded-xl border border-dashed border-outline-variant bg-surface-container-high px-4 py-4 text-sm text-on-surface-variant">
                 No devices in this room.
               </p>
             ) : (
@@ -220,11 +569,14 @@ export default async function RoomDetailPage({
                 {devices.map((device) => {
                   const isOn = coerceBool(device.state?.isOn)
                   return (
-                    <article key={device.id} className="rounded-2xl border border-stone-200 bg-white p-4">
+                    <article
+                      key={device.id}
+                      className="rounded-2xl border border-white/55 bg-surface-container-low p-4 shadow-[5px_5px_12px_rgba(87,66,62,0.08),-5px_-5px_12px_rgba(255,255,255,0.9)]"
+                    >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <h3 className="text-base font-semibold text-stone-900">{device.name}</h3>
-                          <p className="mt-1 text-xs text-stone-600">
+                          <h3 className="text-base font-semibold text-on-surface">{device.name}</h3>
+                          <p className="mt-1 text-xs text-on-surface-variant">
                             {device.type} · {device.online ? "online" : "offline"} · isOn: {String(isOn)}
                           </p>
                         </div>
@@ -233,7 +585,7 @@ export default async function RoomDetailPage({
                           <input type="hidden" name="turn_on" value={isOn ? "0" : "1"} />
                           <button
                             type="submit"
-                            className="rounded-full border border-cyan-300 px-3 py-1 text-xs font-semibold text-cyan-700"
+                            className="rounded-full border border-primary-container bg-primary-fixed px-3 py-1 text-xs font-semibold text-on-primary-fixed-variant"
                           >
                             {isOn ? "Turn off" : "Turn on"}
                           </button>
@@ -247,12 +599,9 @@ export default async function RoomDetailPage({
                             type="text"
                             name="name"
                             defaultValue={device.name}
-                            className="min-w-0 flex-1 rounded-xl border border-stone-300 px-3 py-2 text-sm"
+                            className="clay-inset min-w-0 flex-1 rounded-xl border border-white/50 px-3 py-2 text-sm text-on-surface"
                           />
-                          <button
-                            type="submit"
-                            className="rounded-xl border border-stone-300 px-3 py-2 text-xs font-semibold text-stone-700"
-                          >
+                          <button type="submit" className="btn-outline rounded-xl px-3 py-2 text-xs font-semibold">
                             Update
                           </button>
                         </form>
@@ -261,7 +610,7 @@ export default async function RoomDetailPage({
                           <input type="hidden" name="device_id" value={device.id} />
                           <button
                             type="submit"
-                            className="rounded-xl border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-700"
+                            className="rounded-xl border border-error px-3 py-2 text-xs font-semibold text-error hover:bg-error-container"
                           >
                             Delete
                           </button>
@@ -271,7 +620,7 @@ export default async function RoomDetailPage({
                           <input type="hidden" name="device_id" value={device.id} />
                           <select
                             name="firmware_version_id"
-                            className="rounded-xl border border-stone-300 px-2 py-2 text-xs"
+                            className="clay-inset rounded-xl border border-white/50 px-2 py-2 text-xs text-on-surface"
                             defaultValue={firmwareVersions[0]?.id}
                           >
                             {firmwareVersions.map((fw) => (
@@ -282,19 +631,106 @@ export default async function RoomDetailPage({
                           </select>
                           <button
                             type="submit"
-                            className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white"
+                            className="rounded-xl bg-secondary px-3 py-2 text-xs font-semibold text-on-secondary"
                           >
                             OTA Update
                           </button>
                         </form>
                       </div>
+
+                      {/* Associated Appliances */}
+                      {(() => {
+                        const deviceAppliances = appliances.filter((a) => a.device_id === device.id)
+                        if (deviceAppliances.length === 0) return null
+                        return (
+                          <div className="mt-4 border-t border-white/20 pt-4">
+                            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-outline">
+                              Appliances
+                            </h4>
+                            <div className="grid gap-2">
+                              {deviceAppliances.map((app) => {
+                                const isOn = coerceBool(app.state?.isOn)
+                                return (
+                                  <div
+                                    key={app.id}
+                                    className="flex flex-col gap-2 rounded-xl border border-outline-variant/30 bg-surface p-3 shadow-sm"
+                                  >
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <div>
+                                        <p className="text-sm font-semibold text-on-surface">{app.name}</p>
+                                        <p className="text-xs text-on-surface-variant">
+                                          {app.type} · Channel {app.channel ?? "?"} · Active Low:{" "}
+                                          {String(app.active_low)} · isOn: {String(isOn)}
+                                        </p>
+                                      </div>
+                                      <form action={toggleDeviceAction}>
+                                        <input type="hidden" name="device_id" value={device.id} />
+                                        <input type="hidden" name="channel" value={app.channel ?? ""} />
+                                        <input type="hidden" name="turn_on" value={isOn ? "0" : "1"} />
+                                        <button
+                                          type="submit"
+                                          className="rounded-full border border-primary-container bg-primary-fixed px-3 py-1 text-xs font-semibold text-on-primary-fixed-variant"
+                                        >
+                                          {isOn ? "Turn off" : "Turn on"}
+                                        </button>
+                                      </form>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <form action={updateApplianceAction} className="flex min-w-0 flex-1 gap-2">
+                                        <input type="hidden" name="appliance_id" value={app.id} />
+                                        <input
+                                          type="text"
+                                          name="name"
+                                          defaultValue={app.name}
+                                          className="clay-inset min-w-0 flex-1 rounded-lg border border-white/50 px-2 py-1 text-xs text-on-surface"
+                                        />
+                                        <button
+                                          type="submit"
+                                          className="btn-outline rounded-lg px-2 py-1 text-xs font-semibold"
+                                        >
+                                          Update
+                                        </button>
+                                      </form>
+
+                                      <form action={deleteApplianceAction}>
+                                        <input type="hidden" name="appliance_id" value={app.id} />
+                                        <button
+                                          type="submit"
+                                          className="rounded-lg border border-error px-2 py-1 text-xs font-semibold text-error hover:bg-error-container"
+                                        >
+                                          Delete
+                                        </button>
+                                      </form>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })()}
                     </article>
                   )
                 })}
               </div>
             )}
           </section>
-        </div>
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="rounded-2xl border border-white/50 bg-surface-container p-4 shadow-[4px_4px_10px_rgba(87,66,62,0.08),-4px_-4px_10px_rgba(255,255,255,0.9)]">
+            <p className="text-xs uppercase tracking-[0.1em] text-on-surface-variant">Devices</p>
+            <p className="mt-2 text-2xl font-semibold text-on-surface">{devices.length}</p>
+          </div>
+          <div className="rounded-2xl border border-white/50 bg-surface-container p-4 shadow-[4px_4px_10px_rgba(87,66,62,0.08),-4px_-4px_10px_rgba(255,255,255,0.9)]">
+            <p className="text-xs uppercase tracking-[0.1em] text-on-surface-variant">Online</p>
+            <p className="mt-2 text-2xl font-semibold text-on-surface">{onlineCount}</p>
+          </div>
+          <div className="rounded-2xl border border-white/50 bg-surface-container p-4 shadow-[4px_4px_10px_rgba(87,66,62,0.08),-4px_-4px_10px_rgba(255,255,255,0.9)]">
+            <p className="text-xs uppercase tracking-[0.1em] text-on-surface-variant">Active</p>
+            <p className="mt-2 text-2xl font-semibold text-on-surface">{activeCount}</p>
+          </div>
+        </section>
       </div>
     </div>
   )

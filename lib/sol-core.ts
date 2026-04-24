@@ -183,6 +183,20 @@ export interface RoomDevice {
   updated_at: string
 }
 
+export interface Appliance {
+  id: string
+  device_id: string
+  room_id?: string
+  name: string
+  type: string
+  channel?: number
+  gpio_pin?: number
+  active_low: boolean
+  state: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
 export interface FirmwareVersion {
   id: string
   template_id: string
@@ -193,6 +207,21 @@ export interface FirmwareVersion {
   source_key?: string
   size_bytes: number | null
   created_at: string
+}
+
+export interface TelemetryPoint {
+  device_id: string
+  timestamp: string
+  data: Record<string, unknown>
+}
+
+export interface ActivityLog {
+  room_id: string
+  timestamp: string
+  title: string
+  description: string
+  badge_text: string
+  badge_color: string
 }
 
 export const solCore = {
@@ -278,6 +307,8 @@ export const solCore = {
         method: "POST",
         body: JSON.stringify(body),
       }).then((r) => r.json()),
+    getTelemetry: (id: string, limit: number = 100) =>
+      solFetch(`/api/v1/devices/${id}/telemetry?limit=${limit}`).then((r) => r.json() as Promise<TelemetryPoint[]>),
   },
 
   rooms: {
@@ -302,6 +333,10 @@ export const solCore = {
     delete: (homeID: string, roomID: string) =>
       solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}`, { method: "DELETE" }).then((r) =>
         jsonOrNull(r),
+      ),
+    activity: (homeID: string, roomID: string, limit: number = 20) =>
+      solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/activity?limit=${limit}`).then((r) =>
+        r.json() as Promise<{ data: ActivityLog[] }>,
       ),
     devices: {
       list: (homeID: string, roomID: string, params?: { cursor?: string; limit?: number }) =>
@@ -345,6 +380,27 @@ export const solCore = {
     },
   },
 
+  appliances: {
+    create: (body: Partial<Appliance>) =>
+      solFetch("/api/v1/appliances", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }).then((r) => r.json() as Promise<Appliance>),
+    get: (id: string) =>
+      solFetch(`/api/v1/appliances/${id}`).then((r) => r.json() as Promise<Appliance>),
+    update: (id: string, body: Partial<Appliance>) =>
+      solFetch(`/api/v1/appliances/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      }).then((r) => r.json() as Promise<Appliance>),
+    delete: (id: string) =>
+      solFetch(`/api/v1/appliances/${id}`, { method: "DELETE" }).then((r) => jsonOrNull(r)),
+    listByRoom: (homeID: string, roomID: string) =>
+      solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/appliances`).then((r) =>
+        r.json() as Promise<{ data: Appliance[] }>,
+      ),
+  },
+
   automations: {
     list: () => solFetch("/api/v1/automations").then((r) => r.json()),
     get: (id: string) => solFetch(`/api/v1/automations/${id}`).then((r) => r.json()),
@@ -358,8 +414,7 @@ export const solCore = {
         method: "PUT",
         body: JSON.stringify(body),
       }).then((r) => r.json()),
-    delete: (id: string) =>
-      solFetch(`/api/v1/automations/${id}`, { method: "DELETE" }),
+    delete: (id: string) => solFetch(`/api/v1/automations/${id}`, { method: "DELETE" }),
   },
 
   firmware: {

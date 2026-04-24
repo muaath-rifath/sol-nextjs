@@ -116,30 +116,30 @@ export default async function FirmwarePage({
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#eef8ff_0%,#f7fffb_48%,#fffaf2_100%)] px-4 py-8 sm:px-8">
+    <div className="bg-clay-canvas min-h-screen px-4 py-8 sm:px-8">
       <div className="mx-auto w-full max-w-6xl space-y-6">
-        <header className="rounded-3xl border border-cyan-200 bg-white/90 p-6">
+        <header className="rounded-[2rem] border border-white/60 bg-surface-container-low p-6 shadow-[10px_10px_24px_rgba(87,66,62,0.12),-10px_-10px_24px_rgba(255,255,255,0.92)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">Firmware</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-stone-900">Firmware Versions</h1>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Firmware</p>
+              <h1 className="font-display mt-2 text-3xl font-semibold tracking-tight text-on-surface">Firmware Versions</h1>
             </div>
-            <Link href={`/dashboard/homes/${homeId}`} className="rounded-full border border-stone-300 px-3 py-1.5 text-sm text-stone-700">
+            <Link href={`/dashboard/homes/${homeId}`} className="btn-outline px-3 py-1.5 text-sm">
               Back to home
             </Link>
           </div>
         </header>
 
         {query.notice ? (
-          <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{query.notice}</p>
+          <p className="rounded-2xl border border-tertiary-fixed-dim bg-tertiary-fixed px-4 py-3 text-sm text-on-tertiary-fixed">{query.notice}</p>
         ) : null}
         {query.error ? (
-          <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{query.error}</p>
+          <p className="rounded-2xl border border-error bg-error-container px-4 py-3 text-sm text-on-error-container">{query.error}</p>
         ) : null}
 
         <section className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <aside className="rounded-3xl border border-stone-200 bg-white/90 p-5">
-            <h2 className="text-lg font-semibold text-stone-900">Upload Firmware</h2>
+          <aside className="clay-raised rounded-3xl p-5">
+            <h2 className="font-display text-lg font-semibold text-on-surface">Upload Firmware</h2>
             <form action={uploadAction} className="mt-3 space-y-3">
               <input
                 type="text"
@@ -147,36 +147,36 @@ export default async function FirmwarePage({
                 defaultValue={templateID}
                 required
                 placeholder="template_id (e.g. relay_single)"
-                className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm"
+                className="clay-inset w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface"
               />
               <input
                 type="text"
                 name="version"
                 placeholder="version (optional)"
-                className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm"
+                className="clay-inset w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface"
               />
-              <label className="block text-xs font-semibold text-stone-600">bootloader</label>
-              <input type="file" name="bootloader" accept=".bin" required className="w-full text-sm" />
-              <label className="block text-xs font-semibold text-stone-600">partition_table</label>
-              <input type="file" name="partition_table" accept=".bin" required className="w-full text-sm" />
-              <label className="block text-xs font-semibold text-stone-600">app</label>
-              <input type="file" name="app" accept=".bin" required className="w-full text-sm" />
-              <label className="block text-xs font-semibold text-stone-600">source (optional)</label>
-              <input type="file" name="source" className="w-full text-sm" />
+              <label className="block text-xs font-semibold text-on-surface-variant">bootloader</label>
+              <input type="file" name="bootloader" accept=".bin" required className="w-full text-sm text-on-surface-variant" />
+              <label className="block text-xs font-semibold text-on-surface-variant">partition_table</label>
+              <input type="file" name="partition_table" accept=".bin" required className="w-full text-sm text-on-surface-variant" />
+              <label className="block text-xs font-semibold text-on-surface-variant">app</label>
+              <input type="file" name="app" accept=".bin" required className="w-full text-sm text-on-surface-variant" />
+              <label className="block text-xs font-semibold text-on-surface-variant">source (optional)</label>
+              <input type="file" name="source" className="w-full text-sm text-on-surface-variant" />
               <button
                 type="submit"
-                className="w-full rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-2 text-sm font-semibold text-white"
+                className="btn-primary w-full px-4 py-2 text-sm font-semibold"
               >
                 Upload
               </button>
             </form>
           </aside>
 
-          <section className="rounded-3xl border border-stone-200 bg-white/90 p-5">
+          <section className="clay-raised rounded-3xl p-5">
             <div className="mb-3 flex flex-wrap gap-2 text-xs">
               <Link
                 href={pageHref(homeId, {})}
-                className={`rounded-full border px-3 py-1 ${templateID ? "border-stone-300 text-stone-700" : "border-cyan-400 bg-cyan-50 text-cyan-800"}`}
+                className={`rounded-full border px-3 py-1 ${templateID ? "border-outline-variant text-on-surface-variant" : "border-primary-fixed-dim bg-primary-fixed text-on-primary-fixed-variant"}`}
               >
                 all templates
               </Link>
@@ -184,7 +184,7 @@ export default async function FirmwarePage({
                 <Link
                   key={template}
                   href={pageHref(homeId, { template_id: template })}
-                  className={`rounded-full border px-3 py-1 ${templateID === template ? "border-cyan-400 bg-cyan-50 text-cyan-800" : "border-stone-300 text-stone-700"}`}
+                  className={`rounded-full border px-3 py-1 ${templateID === template ? "border-primary-fixed-dim bg-primary-fixed text-on-primary-fixed-variant" : "border-outline-variant text-on-surface-variant"}`}
                 >
                   {template}
                 </Link>
@@ -192,17 +192,17 @@ export default async function FirmwarePage({
             </div>
 
             {firmwareVersions.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+              <p className="rounded-xl border border-dashed border-outline-variant bg-surface-container-high px-4 py-4 text-sm text-on-surface-variant">
                 No firmware versions uploaded yet.
               </p>
             ) : (
               <div className="space-y-3">
                 {firmwareVersions.map((version) => (
-                  <article key={version.id} className="rounded-2xl border border-stone-200 bg-white p-4">
-                    <p className="text-sm font-semibold text-stone-900">
+                  <article key={version.id} className="rounded-2xl border border-white/55 bg-surface-container-low p-4 shadow-[5px_5px_12px_rgba(87,66,62,0.08),-5px_-5px_12px_rgba(255,255,255,0.9)]">
+                    <p className="text-sm font-semibold text-on-surface">
                       {version.template_id} · {version.version}
                     </p>
-                    <p className="mt-1 text-xs text-stone-600">
+                    <p className="mt-1 text-xs text-on-surface-variant">
                       size: {version.size_bytes ?? 0} bytes · {new Date(version.created_at).toLocaleString()}
                     </p>
 
@@ -211,7 +211,7 @@ export default async function FirmwarePage({
                         <input type="hidden" name="firmware_version_id" value={version.id} />
                         <select
                           name="target"
-                          className="rounded-xl border border-stone-300 px-2 py-2 text-xs"
+                          className="clay-inset rounded-xl border border-white/55 px-2 py-2 text-xs text-on-surface"
                           defaultValue={allDevices[0] ? `${allDevices[0].room_id}:${allDevices[0].id}` : ""}
                         >
                           {allDevices.map((device) => (
@@ -222,13 +222,13 @@ export default async function FirmwarePage({
                         </select>
                         <button
                           type="submit"
-                          className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white"
+                          className="rounded-xl bg-secondary px-3 py-2 text-xs font-semibold text-on-secondary"
                         >
                           OTA
                         </button>
                       </form>
                     ) : (
-                      <p className="mt-2 text-xs text-stone-500">No devices available for OTA.</p>
+                      <p className="mt-2 text-xs text-on-surface-variant">No devices available for OTA.</p>
                     )}
                   </article>
                 ))}

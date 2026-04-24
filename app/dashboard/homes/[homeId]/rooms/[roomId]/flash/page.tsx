@@ -22,21 +22,21 @@ export default async function FlashPage({
   }))
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f2f8ff_0%,#f9fffd_45%,#fff8ef_100%)] px-4 py-8 sm:px-8">
+    <div className="bg-clay-canvas min-h-screen px-4 py-8 sm:px-8">
       <div className="mx-auto w-full max-w-5xl space-y-5">
-        <header className="rounded-3xl border border-stone-200 bg-white/90 p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-700">Flasher</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-stone-900">{room.name}</h1>
+        <header className="rounded-[2rem] border border-white/60 bg-surface-container-low p-6 shadow-[10px_10px_24px_rgba(87,66,62,0.12),-10px_-10px_24px_rgba(255,255,255,0.92)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Flasher</p>
+          <h1 className="font-display mt-2 text-3xl font-semibold tracking-tight text-on-surface">{room.name}</h1>
           <div className="mt-3 flex flex-wrap gap-2">
             <Link
               href={`/dashboard/homes/${homeId}/rooms/${roomId}`}
-              className="rounded-full border border-stone-300 px-3 py-1.5 text-sm text-stone-700"
+              className="btn-outline px-3 py-1.5 text-sm"
             >
               Back to room
             </Link>
             <Link
               href={`/dashboard/homes/${homeId}/firmware`}
-              className="rounded-full border border-stone-300 px-3 py-1.5 text-sm text-stone-700"
+              className="btn-outline px-3 py-1.5 text-sm"
             >
               Manage firmware
             </Link>
