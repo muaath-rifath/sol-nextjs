@@ -2,6 +2,7 @@
 
 import { patchFirmware, type FlashConfig, type FirmwareTemplateId } from "@/lib/firmware-patcher"
 import { solCore } from "@/lib/sol-core"
+import { getDeviceProvisioning } from "@/lib/actions"
 import { IconAlertCircle, IconCheck, IconLoader2, IconX } from "@tabler/icons-react"
 import clsx from "clsx"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -173,7 +174,7 @@ export default function Flasher({
       const bytes = new Uint8Array(arrayBuffer)
 
       addLog("Generating device mTLS certificates...")
-      const certBundle = await solCore.devices.provision(deviceID)
+      const certBundle = await getDeviceProvisioning(deviceID)
       addLog("Certificates generated successfully.")
       
       setStatus("Patching firmware...")
