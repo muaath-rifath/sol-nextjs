@@ -1,7 +1,7 @@
 "use client"
 
 import { patchFirmware, type FlashConfig, type FirmwareTemplateId } from "@/lib/firmware-patcher"
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState } from "react"
 
 type FirmwareVersion = {
   id: string
@@ -20,26 +20,15 @@ type Props = {
   firmwareVersions: FirmwareVersion[]
   devices: DeviceOption[]
   defaultTemplate?: string
+  mqttBrokerUrl: string
 }
 
-export default function Flasher({ firmwareVersions, devices, defaultTemplate }: Props) {
+export default function Flasher({ firmwareVersions, devices, defaultTemplate, mqttBrokerUrl }: Props) {
   const [deviceID, setDeviceID] = useState<string>(devices[0]?.id ?? "")
   const [wifiSsid, setWifiSsid] = useState("")
   const [wifiPassword, setWifiPassword] = useState("")
-  const [mqttBrokerUri, setMqttBrokerUri] = useState("")
   const [isBusy, setIsBusy] = useState(false)
   const [status, setStatus] = useState<string>("Ready")
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setMqttBrokerUri(`mqtts://api.mysol.internal:8883`) // Example fallback
-      if (window.location.hostname) {
-        setMqttBrokerUri(window.location.protocol === 'https:'
-          ? `mqtts://${window.location.hostname}:8883`
-          : `mqtt://${window.location.hostname}:1883`)
-      }
-    }
-  }, [])
 
   const selectedDevice = useMemo(
     () => devices.find((d) => d.id === deviceID) ?? devices[0],
@@ -79,7 +68,7 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate }: 
       const patched = await patchFirmware(bytes, {
         wifiSsid,
         wifiPassword,
-        mqttBrokerUri,
+        mqttBrokerUri: mqttBrokerUrl,
         deviceId: deviceID,
         templateId: (selectedFirmware.template_id || defaultTemplate || "relay_single") as FirmwareTemplateId,
         templateMode: 0,
@@ -151,6 +140,7 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate }: 
     <div className="rounded-3xl border border-white/60 bg-surface-container-low p-5 shadow-[10px_10px_24px_rgba(87,66,62,0.12),-10px_-10px_24px_rgba(255,255,255,0.92)]">
       <h2 className="font-display text-lg font-semibold text-on-surface">WebSerial Flasher</h2>
       <p className="mt-1 text-sm text-on-surface-variant">Download firmware, patch SOLCFGv2 fields, and flash via serial.</p>
+
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <label className="text-xs font-semibold text-on-surface-variant">
           Node (Switchboard)
@@ -168,19 +158,20 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate }: 
         </label>
 
         <label className="text-xs font-semibold text-on-surface-variant">
-          MQTT URI (Auto-Detected)
-          <input value={mqttBrokerUri} onChange={(e) => setMqttBrokerUri(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
-        </label>
-
-        <label className="text-xs font-semibold text-on-surface-variant">
           Wi-Fi SSID
           <input value={wifiSsid} onChange={(e) => setWifiSsid(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
         </label>
 
-        <label className="text-xs font-semibold text-on-surface-variant">
+        <label className="col-span-full text-xs font-semibold text-on-surface-variant md:col-span-1">
           Wi-Fi Password
-          <input value={wifiPassword} onChange={(e) => setWifiPassword(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
+          <input type="password" value={wifiPassword} onChange={(e) => setWifiPassword(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
         </label>
+
+        <div className="flex items-end">
+          <p className="text-xs text-on-surface-variant">
+            MQTT broker: <span className="font-mono text-primary">{mqttBrokerUrl}</span>
+          </p>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">

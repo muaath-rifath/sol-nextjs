@@ -43,7 +43,11 @@ export default async function FlashPage({
           </div>
         </header>
 
-        <Flasher firmwareVersions={flashFirmware} devices={flashDevices} />
+        <Flasher
+          firmwareVersions={flashFirmware}
+          devices={flashDevices}
+          mqttBrokerUrl={process.env.NEXT_PUBLIC_MQTT_BROKER_URL ?? "ssl://mqtt.sol.muaathrifath.me:8883"}
+        />
       </div>
     </div>
   )
