@@ -4,6 +4,8 @@ export interface FlashConfig {
   wifiSsid: string
   wifiPassword: string
   mqttBrokerUri: string
+  mqttUsername: string
+  mqttPassword: string
   deviceId: string
   templateId: FirmwareTemplateId
   templateMode: number
@@ -19,6 +21,8 @@ export const SLOT_MAP = {
   wifiSsid: { fieldSize: 33, maxLength: 32, label: "Wi-Fi SSID" },
   wifiPassword: { fieldSize: 65, maxLength: 64, label: "Wi-Fi password" },
   mqttBrokerUri: { fieldSize: 129, maxLength: 128, label: "MQTT broker URI" },
+  mqttUsername: { fieldSize: 65, maxLength: 64, label: "MQTT username" },
+  mqttPassword: { fieldSize: 65, maxLength: 64, label: "MQTT password" },
   deviceId: { fieldSize: 65, maxLength: 64, label: "Device ID" },
   templateId: { fieldSize: 33, maxLength: 32, label: "Template ID" },
 } as const
@@ -28,6 +32,8 @@ export const PATCH_BLOB_SIZE =
   SLOT_MAP.wifiSsid.fieldSize +
   SLOT_MAP.wifiPassword.fieldSize +
   SLOT_MAP.mqttBrokerUri.fieldSize +
+  SLOT_MAP.mqttUsername.fieldSize +
+  SLOT_MAP.mqttPassword.fieldSize +
   SLOT_MAP.deviceId.fieldSize +
   SLOT_MAP.templateId.fieldSize +
   1 +
@@ -39,22 +45,36 @@ export const FIELD_OFFSETS = {
   wifiSsid: PATCH_SIGNATURE_FIELD_SIZE,
   wifiPassword: PATCH_SIGNATURE_FIELD_SIZE + SLOT_MAP.wifiSsid.fieldSize,
   mqttBrokerUri: PATCH_SIGNATURE_FIELD_SIZE + SLOT_MAP.wifiSsid.fieldSize + SLOT_MAP.wifiPassword.fieldSize,
+  mqttUsername:
+    PATCH_SIGNATURE_FIELD_SIZE + SLOT_MAP.wifiSsid.fieldSize + SLOT_MAP.wifiPassword.fieldSize + SLOT_MAP.mqttBrokerUri.fieldSize,
+  mqttPassword:
+    PATCH_SIGNATURE_FIELD_SIZE +
+    SLOT_MAP.wifiSsid.fieldSize +
+    SLOT_MAP.wifiPassword.fieldSize +
+    SLOT_MAP.mqttBrokerUri.fieldSize +
+    SLOT_MAP.mqttUsername.fieldSize,
   deviceId:
     PATCH_SIGNATURE_FIELD_SIZE +
     SLOT_MAP.wifiSsid.fieldSize +
     SLOT_MAP.wifiPassword.fieldSize +
-    SLOT_MAP.mqttBrokerUri.fieldSize,
+    SLOT_MAP.mqttBrokerUri.fieldSize +
+    SLOT_MAP.mqttUsername.fieldSize +
+    SLOT_MAP.mqttPassword.fieldSize,
   templateId:
     PATCH_SIGNATURE_FIELD_SIZE +
     SLOT_MAP.wifiSsid.fieldSize +
     SLOT_MAP.wifiPassword.fieldSize +
     SLOT_MAP.mqttBrokerUri.fieldSize +
+    SLOT_MAP.mqttUsername.fieldSize +
+    SLOT_MAP.mqttPassword.fieldSize +
     SLOT_MAP.deviceId.fieldSize,
   templateMode:
     PATCH_SIGNATURE_FIELD_SIZE +
     SLOT_MAP.wifiSsid.fieldSize +
     SLOT_MAP.wifiPassword.fieldSize +
     SLOT_MAP.mqttBrokerUri.fieldSize +
+    SLOT_MAP.mqttUsername.fieldSize +
+    SLOT_MAP.mqttPassword.fieldSize +
     SLOT_MAP.deviceId.fieldSize +
     SLOT_MAP.templateId.fieldSize,
   relayPins:
@@ -62,6 +82,8 @@ export const FIELD_OFFSETS = {
     SLOT_MAP.wifiSsid.fieldSize +
     SLOT_MAP.wifiPassword.fieldSize +
     SLOT_MAP.mqttBrokerUri.fieldSize +
+    SLOT_MAP.mqttUsername.fieldSize +
+    SLOT_MAP.mqttPassword.fieldSize +
     SLOT_MAP.deviceId.fieldSize +
     SLOT_MAP.templateId.fieldSize +
     1,
@@ -70,6 +92,8 @@ export const FIELD_OFFSETS = {
     SLOT_MAP.wifiSsid.fieldSize +
     SLOT_MAP.wifiPassword.fieldSize +
     SLOT_MAP.mqttBrokerUri.fieldSize +
+    SLOT_MAP.mqttUsername.fieldSize +
+    SLOT_MAP.mqttPassword.fieldSize +
     SLOT_MAP.deviceId.fieldSize +
     SLOT_MAP.templateId.fieldSize +
     1 +
@@ -208,6 +232,8 @@ export async function patchFirmware(bytes: Uint8Array, config: FlashConfig): Pro
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.wifiSsid, SLOT_MAP.wifiSsid.fieldSize, SLOT_MAP.wifiSsid.label, SLOT_MAP.wifiSsid.maxLength, config.wifiSsid, encoder)
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.wifiPassword, SLOT_MAP.wifiPassword.fieldSize, SLOT_MAP.wifiPassword.label, SLOT_MAP.wifiPassword.maxLength, config.wifiPassword, encoder)
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.mqttBrokerUri, SLOT_MAP.mqttBrokerUri.fieldSize, SLOT_MAP.mqttBrokerUri.label, SLOT_MAP.mqttBrokerUri.maxLength, config.mqttBrokerUri, encoder)
+  writeStringField(bytes, blobOffset, FIELD_OFFSETS.mqttUsername, SLOT_MAP.mqttUsername.fieldSize, SLOT_MAP.mqttUsername.label, SLOT_MAP.mqttUsername.maxLength, config.mqttUsername, encoder)
+  writeStringField(bytes, blobOffset, FIELD_OFFSETS.mqttPassword, SLOT_MAP.mqttPassword.fieldSize, SLOT_MAP.mqttPassword.label, SLOT_MAP.mqttPassword.maxLength, config.mqttPassword, encoder)
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.deviceId, SLOT_MAP.deviceId.fieldSize, SLOT_MAP.deviceId.label, SLOT_MAP.deviceId.maxLength, config.deviceId, encoder)
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.templateId, SLOT_MAP.templateId.fieldSize, SLOT_MAP.templateId.label, SLOT_MAP.templateId.maxLength, config.templateId, encoder)
 

@@ -15,19 +15,29 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 }
 
 async function getErrorMessage(response: Response): Promise<string> {
+  const contentType = response.headers.get("Content-Type") || ""
   const text = await response.text()
+  
   if (!text) {
     return `${response.status} ${response.statusText}`
   }
-  try {
-    const parsed = JSON.parse(text) as { error?: string }
-    if (parsed.error) {
-      return parsed.error
+
+  if (contentType.includes("application/json")) {
+    try {
+      const parsed = JSON.parse(text) as { error?: string }
+      if (parsed.error) return parsed.error
+    } catch {
+      // Fallback
     }
-  } catch {
-    // Keep original text fallback.
   }
-  return text
+
+  // If it's HTML (likely from a proxy like Traefik or an OIDC provider), don't return the whole thing
+  if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
+    return `Server Error: ${response.status} ${response.statusText}`
+  }
+
+  // Truncate long non-JSON responses
+  return text.length > 200 ? `${text.substring(0, 200)}...` : text
 }
 
 async function solFetch(path: string, init: RequestInit = {}): Promise<Response> {

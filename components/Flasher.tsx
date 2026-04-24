@@ -1,7 +1,9 @@
 "use client"
 
 import { patchFirmware, type FlashConfig, type FirmwareTemplateId } from "@/lib/firmware-patcher"
-import { useMemo, useState } from "react"
+import { IconAlertCircle, IconCheck, IconLoader2, IconX } from "@tabler/icons-react"
+import clsx from "clsx"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 type FirmwareVersion = {
   id: string
@@ -16,19 +18,37 @@ type DeviceOption = {
   metadata?: Record<string, string>
 }
 
+type LogEntry = {
+  text: string
+  type: "info" | "error" | "success"
+}
+
 type Props = {
   firmwareVersions: FirmwareVersion[]
   devices: DeviceOption[]
   defaultTemplate?: string
   mqttBrokerUrl: string
+  mqttUsername: string
+  mqttPassword: string
 }
 
-export default function Flasher({ firmwareVersions, devices, defaultTemplate, mqttBrokerUrl }: Props) {
+export default function Flasher({
+  firmwareVersions,
+  devices,
+  defaultTemplate,
+  mqttBrokerUrl,
+  mqttUsername,
+  mqttPassword,
+}: Props) {
   const [deviceID, setDeviceID] = useState<string>(devices[0]?.id ?? "")
   const [wifiSsid, setWifiSsid] = useState("")
   const [wifiPassword, setWifiPassword] = useState("")
   const [isBusy, setIsBusy] = useState(false)
   const [status, setStatus] = useState<string>("Ready")
+  const [logs, setLogs] = useState<LogEntry[]>([])
+  const [showLogs, setShowLogs] = useState(false)
+
+  const logEndRef = useRef<HTMLDivElement>(null)
 
   const selectedDevice = useMemo(
     () => devices.find((d) => d.id === deviceID) ?? devices[0],
@@ -45,6 +65,61 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate, mq
     return firmwareVersions[0]
   }, [selectedDevice, firmwareVersions])
 
+  const addLog = useCallback((text: string, type: "info" | "error" | "success" = "info") => {
+    setLogs((prev) => [...prev, { text, type }])
+  }, [])
+
+  useEffect(() => {
+    if (logEndRef.current) {
+      logEndRef.current.scrollIntoView({ behavior: "smooth" })
+    }
+  }, [logs])
+
+  function getFriendlyErrorMessage(message: string): string[] {
+    if (
+      message.includes("Failed to execute 'open' on 'SerialPort'") ||
+      message.includes("Failed to open serial port")
+    ) {
+      return [
+        "Failed to open serial port.",
+        "Close anything using the port (idf.py monitor, screen, minicom, another browser tab), then retry.",
+        "On Linux, ModemManager may grab CH340 ports: sudo systemctl stop ModemManager",
+        "For a permanent fix: sudo systemctl disable ModemManager",
+        "On Linux, ensure your user is in dialout: sudo usermod -aG dialout $USER (then log out/in).",
+        "CH340 adapters usually appear as /dev/ttyUSB*.",
+      ]
+    }
+
+    if (message.includes("No port selected") || message.includes("user gesture")) {
+      return ["No serial port selected."]
+    }
+
+    if (
+      message.includes("Failed to connect with the device") ||
+      message.includes("timed out waiting for packet header")
+    ) {
+      return [
+        "Failed to connect to ESP32 bootloader.",
+        "Press and hold BOOT, tap RESET, release RESET, then release BOOT and retry immediately.",
+        "If your board has CH340, auto-reset wiring may be missing; manual bootloader entry is often required.",
+      ]
+    }
+
+    if (
+      message.includes("The device has been lost") ||
+      message.includes("device has been lost")
+    ) {
+      return [
+        "USB serial device was lost during flashing.",
+        "Close idf.py monitor or any serial tool using the same port, then retry.",
+        "If monitor is open, press Ctrl+] in that terminal to exit it cleanly.",
+        "If this keeps happening, unplug/replug the USB cable and try again.",
+      ]
+    }
+
+    return [`Error: ${message}`]
+  }
+
   async function onFlash() {
     if (!deviceID) {
       setStatus("Select a device first")
@@ -55,20 +130,53 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate, mq
       return
     }
 
-    setIsBusy(true)
+    const nav = navigator as Navigator & {
+      serial?: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        requestPort: (options?: { filters?: { usbVendorId: number; usbProductId?: number }[] }) => Promise<any>
+      }
+    }
+    if (!nav.serial) {
+      setStatus("WebSerial is not supported in this browser")
+      return
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let port: any
     try {
+      port = await nav.serial.requestPort({
+        filters: [
+          { usbVendorId: 0x1a86, usbProductId: 0x55d3 }, // CH340
+          { usbVendorId: 0x303a }, // Espressif USB interfaces
+        ],
+      })
+    } catch (err) {
+      console.error("User cancelled or failed to select port", err)
+      return
+    }
+
+    setIsBusy(true)
+    setShowLogs(true)
+    setLogs([])
+    try {
+      addLog("Starting flash process...")
       setStatus("Downloading firmware...")
+      addLog(`Downloading firmware version ${selectedFirmware.version}...`)
       const response = await fetch(`/api/firmware/${selectedFirmware.id}`, { cache: "no-store" })
       if (!response.ok) {
         throw new Error(`Download failed: ${response.status}`)
       }
       const arrayBuffer = await response.arrayBuffer()
       const bytes = new Uint8Array(arrayBuffer)
+      
       setStatus("Patching firmware...")
+      addLog("Patching SOLCFGv2 fields...")
       const patched = await patchFirmware(bytes, {
         wifiSsid,
         wifiPassword,
         mqttBrokerUri: mqttBrokerUrl,
+        mqttUsername: mqttUsername,
+        mqttPassword: mqttPassword,
         deviceId: deviceID,
         templateId: (selectedFirmware.template_id || defaultTemplate || "relay_single") as FirmwareTemplateId,
         templateMode: 0,
@@ -76,24 +184,13 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate, mq
         relayActiveLowMask: 0,
       } as FlashConfig)
 
-      setStatus("Connecting to serial...")
-      const nav = navigator as Navigator & {
-        serial?: {
-          requestPort: () => Promise<unknown>
-        }
-      }
-      if (!nav.serial) {
-        throw new Error("WebSerial is not supported in this browser")
-      }
-
-      const port = await nav.serial.requestPort()
-
       setStatus("Flashing with esptool-js...")
+      addLog("Connecting to ESP32...")
       const mod = (await import("esptool-js")) as unknown as {
         ESPLoader?: new (...args: unknown[]) => {
           main: () => Promise<void>
           writeFlash: (...args: unknown[]) => Promise<void>
-          hardReset: () => Promise<void>
+          after: (mode: string) => Promise<void>
         }
         Transport?: new (...args: unknown[]) => unknown
       }
@@ -105,15 +202,16 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate, mq
       const transport = new mod.Transport(port)
       const loader = new mod.ESPLoader({
         transport,
-        baudrate: 115200,
+        baudrate: 921600,
         terminal: {
-          clean: () => undefined,
-          writeLine: () => undefined,
-          write: () => undefined,
+          clean: () => setLogs([]),
+          writeLine: (data: string) => addLog(data),
+          write: (data: string) => addLog(data),
         },
       })
 
       await loader.main()
+      addLog("Chip connected. Writing flash...")
       await loader.writeFlash({
         fileArray: [
           {
@@ -127,10 +225,15 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate, mq
         eraseAll: false,
         compress: true,
       })
-      await loader.hardReset()
+      addLog("Flash complete! Resetting...", "success")
+      await loader.after("hard_reset")
       setStatus("Flash complete")
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Flash failed")
+      const msg = error instanceof Error ? error.message : String(error)
+      for (const line of getFriendlyErrorMessage(msg)) {
+        addLog(line, "error")
+      }
+      setStatus("Flash failed")
     } finally {
       setIsBusy(false)
     }
@@ -190,7 +293,65 @@ export default function Flasher({ firmwareVersions, devices, defaultTemplate, mq
           {isBusy ? "Flashing..." : "Start Flash"}
         </button>
         <span className="text-sm text-on-surface-variant">{status}</span>
+        {logs.length > 0 && (
+          <button 
+            onClick={() => setShowLogs(true)}
+            className="text-xs font-bold text-primary hover:underline"
+          >
+            View Logs
+          </button>
+        )}
       </div>
+
+      {showLogs && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm">
+          <div className="bg-clay-canvas w-full max-w-2xl overflow-hidden rounded-[2.5rem] border border-white/60 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/40 p-6">
+              <div className="flex items-center gap-3">
+                <h2 className="font-display text-xl font-bold text-on-surface">Flashing Logs</h2>
+                {isBusy && <IconLoader2 className="animate-spin text-primary" size={20} />}
+                {status === "Flash complete" && <IconCheck className="text-emerald-500" size={20} />}
+                {status === "Flash failed" && <IconAlertCircle className="text-error" size={20} />}
+              </div>
+              <button onClick={() => setShowLogs(false)} className="text-on-surface-variant hover:text-on-surface">
+                <IconX size={24} />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="clay-inset relative h-96 overflow-hidden rounded-2xl border border-white/55 bg-stone-950 font-mono text-xs text-stone-100">
+                <div className="absolute inset-0 overflow-y-auto p-4">
+                  {logs.map((log, i) => (
+                    <div key={i} className={clsx("mb-1", {
+                      "text-error": log.type === "error",
+                      "text-emerald-400": log.type === "success",
+                      "text-stone-300": log.type === "info"
+                    })}>
+                      {log.text}
+                    </div>
+                  ))}
+                  <div ref={logEndRef} />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-sm font-medium text-on-surface-variant">
+                  Status: <span className={clsx("font-bold", {
+                    "text-error": status === "Flash failed",
+                    "text-emerald-600": status === "Flash complete",
+                    "text-primary": isBusy
+                  })}>{status}</span>
+                </span>
+                <button
+                  onClick={() => setShowLogs(false)}
+                  className="btn-outline px-6 py-2 text-sm font-semibold"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
