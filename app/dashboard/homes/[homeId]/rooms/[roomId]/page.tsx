@@ -618,56 +618,55 @@ export default async function RoomDetailPage({
                         const deviceAppliances = appliances.filter((a) => a.device_id === device.id)
                         if (deviceAppliances.length === 0) return null
                         return (
-                          <div className="mt-4 border-t border-white/20 pt-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <h4 className="text-[10px] font-bold uppercase tracking-[0.15em] text-outline">
+                          <div className="mt-4 border-t border-white/10 pt-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="text-[9px] font-bold uppercase tracking-[0.1em] text-outline opacity-60">
                                 Appliances
                               </h4>
-                              <span className="h-px flex-1 bg-white/10 mx-3" />
+                              <span className="h-px flex-1 bg-white/5" />
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="flex flex-wrap gap-2">
                               {deviceAppliances.map((app) => {
                                 const isOn = coerceBool(app.state?.isOn)
                                 return (
                                   <div
                                     key={app.id}
-                                    className="group relative flex items-center justify-between gap-3 rounded-xl border border-white/40 bg-surface/40 p-2 pl-3 shadow-sm transition hover:bg-surface/60"
+                                    className="group flex items-center gap-2.5 rounded-lg border border-white/20 bg-surface/30 p-1.5 pl-2 transition hover:bg-surface/50"
                                   >
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-2">
-                                        <p className="truncate text-sm font-semibold text-on-surface">{app.name}</p>
-                                        <span className={`h-1.5 w-1.5 rounded-full ${isOn ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "bg-stone-400"}`} />
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5">
+                                        <div className={`h-1.5 w-1.5 rounded-full ${isOn ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" : "bg-stone-500"}`} />
+                                        <p className="truncate text-xs font-medium text-on-surface leading-tight">{app.name}</p>
                                       </div>
-                                      <p className="truncate text-[10px] text-on-surface-variant/80">
-                                        {app.type} · Ch {app.channel ?? "?"}
+                                      <p className="truncate text-[9px] text-on-surface-variant/60 leading-tight">
+                                        {app.type} · Ch{app.channel ?? "?"}
                                       </p>
                                     </div>
 
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1">
                                       <form action={toggleDeviceAction}>
                                         <input type="hidden" name="device_id" value={device.id ?? ""} />
                                         <input type="hidden" name="channel" value={app.channel ?? ""} />
                                         <input type="hidden" name="turn_on" value={isOn ? "0" : "1"} />
                                         <button
                                           type="submit"
-                                          className={`rounded-lg border px-3 py-1 text-[11px] font-bold transition-all ${isOn
-                                            ? "border-primary-container bg-primary-fixed text-on-primary-fixed-variant shadow-sm"
-                                            : "border-outline-variant bg-surface-container-low text-on-surface-variant hover:border-outline hover:bg-surface-container-high"
+                                          className={`rounded-md border px-2 py-0.5 text-[10px] font-bold transition-all ${isOn
+                                            ? "border-primary-container bg-primary-fixed text-on-primary-fixed-variant"
+                                            : "border-outline-variant bg-surface-container-low text-on-surface-variant hover:border-outline"
                                             }`}
                                         >
                                           {isOn ? "On" : "Off"}
                                         </button>
                                       </form>
 
-                                      <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                                      <div className="flex opacity-0 transition-opacity group-hover:opacity-100">
                                         <form action={deleteApplianceAction}>
                                           <input type="hidden" name="appliance_id" value={app.id ?? ""} />
                                           <button
                                             type="submit"
-                                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-error/30 bg-error-container/20 text-error hover:bg-error-container/40"
-                                            title="Delete"
+                                            className="flex h-5 w-5 items-center justify-center rounded-md border border-error/20 bg-error-container/10 text-error hover:bg-error-container/30"
                                           >
-                                            <IconX size={14} />
+                                            <IconX size={10} />
                                           </button>
                                         </form>
                                       </div>
