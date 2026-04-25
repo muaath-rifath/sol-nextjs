@@ -253,6 +253,30 @@ function writeStringField(
   bytes.set(valueBytes, start)
 }
 
+/**
+ * Build the certs partition binary (64KB = 0x10000 bytes).
+ * Layout matches certs.h: CA at 0x0000, client cert at 0x1000, key at 0x2000.
+ * Each slot is 4KB (0x1000). Returns a 64KB Uint8Array filled with 0xFF.
+ */
+export function buildCertsPartition(caCert: string, clientCert: string, clientKey: string): Uint8Array {
+  const PART_SIZE = 0x10000 // 64KB — matches partitions.csv
+  const SLOT_SIZE = 0x1000  // 4KB per cert
+  const encoder = new TextEncoder()
+  const buf = new Uint8Array(PART_SIZE).fill(0xff)
+
+  const writeCert = (slotOffset: number, pem: string) => {
+    const bytes = encoder.encode(pem + "\0")
+    if (bytes.length > SLOT_SIZE) throw new Error("Certificate/Key exceeds 4KB slot size")
+    buf.fill(0x00, slotOffset, slotOffset + SLOT_SIZE)
+    buf.set(bytes, slotOffset)
+  }
+
+  writeCert(CERT_OFFSETS.caCert, caCert)
+  writeCert(CERT_OFFSETS.clientCert, clientCert)
+  writeCert(CERT_OFFSETS.clientKey, clientKey)
+  return buf
+}
+
 export async function patchFirmware(bytes: Uint8Array, config: FlashConfig): Promise<Uint8Array> {
   const encoder = new TextEncoder()
   const blobOffset = findConfigBlobOffset(bytes)
@@ -298,22 +322,6 @@ export async function patchFirmware(bytes: Uint8Array, config: FlashConfig): Pro
   }
   bytes[blobOffset + FIELD_OFFSETS.relayActiveLowMask] = activeLowMask
   bytes.fill(0, blobOffset + FIELD_OFFSETS.relayActiveLowMask + 1, blobOffset + PATCH_BLOB_SIZE)
-
-  // Patch certificates if provided
-  if (config.mtls) {
-    const certsOffset = findPartitionOffset(bytes, "certs")
-    if (certsOffset >= 0) {
-      const writeCert = (offset: number, value: string) => {
-        const valBytes = encoder.encode(value + "\0")
-        if (valBytes.length > 0x1000) throw new Error("Certificate/Key exceeds 4KB slot size")
-        bytes.fill(0, certsOffset + offset, certsOffset + offset + 0x1000)
-        bytes.set(valBytes, certsOffset + offset)
-      }
-      writeCert(CERT_OFFSETS.caCert, config.mtls.caCert)
-      writeCert(CERT_OFFSETS.clientCert, config.mtls.clientCert)
-      writeCert(CERT_OFFSETS.clientKey, config.mtls.clientKey)
-    }
-  }
 
   recomputeEspImageChecksum(bytes)
 

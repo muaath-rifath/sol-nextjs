@@ -1,6 +1,6 @@
 "use client"
 
-import { patchFirmware, type FlashConfig, type FirmwareTemplateId } from "@/lib/firmware-patcher"
+import { patchFirmware, buildCertsPartition, type FlashConfig, type FirmwareTemplateId } from "@/lib/firmware-patcher"
 import { solCore } from "@/lib/sol-core"
 import { getDeviceProvisioning } from "@/lib/actions"
 import { IconAlertCircle, IconCheck, IconLoader2, IconX } from "@tabler/icons-react"
@@ -176,7 +176,7 @@ export default function Flasher({
       addLog("Generating device mTLS certificates...")
       const certBundle = await getDeviceProvisioning(deviceID)
       addLog("Certificates generated successfully.")
-      
+
       setStatus("Patching firmware...")
       addLog("Patching SOLCFGv2 fields...")
       const patched = await patchFirmware(bytes, {
@@ -196,6 +196,17 @@ export default function Flasher({
           clientKey: certBundle.PrivateKeyPEM,
         },
       } as FlashConfig)
+
+      // Build certs partition binary (64KB at 0x610000)
+      let certsPartition: Uint8Array | null = null
+      if (certBundle) {
+        addLog("Building certs partition binary...")
+        certsPartition = buildCertsPartition(
+          caCert,
+          certBundle.CertificatePEM,
+          certBundle.PrivateKeyPEM,
+        )
+      }
 
       setStatus("Flashing with esptool-js...")
       addLog("Connecting to ESP32...")
@@ -231,6 +242,8 @@ export default function Flasher({
             address: 0x10000,
             data: patched,
           },
+          // Write the certs partition to 0x610000 (matches partitions.csv)
+          ...(certsPartition ? [{ address: 0x610000, data: certsPartition }] : []),
         ],
         flashSize: "keep",
         flashMode: "keep",
@@ -307,7 +320,7 @@ export default function Flasher({
         </button>
         <span className="text-sm text-on-surface-variant">{status}</span>
         {logs.length > 0 && (
-          <button 
+          <button
             onClick={() => setShowLogs(true)}
             className="text-xs font-bold text-primary hover:underline"
           >

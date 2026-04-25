@@ -17,7 +17,7 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 async function getErrorMessage(response: Response): Promise<string> {
   const contentType = response.headers.get("Content-Type") || ""
   const text = await response.text()
-  
+
   if (!text) {
     return `${response.status} ${response.statusText}`
   }
@@ -82,11 +82,19 @@ async function solPublicFetch(path: string, init: RequestInit = {}): Promise<Res
   return response
 }
 
-async function jsonOrNull<T>(response: Response): Promise<T | null> {
-  if (response.status === 204) {
-    return null
+async function safeJson<T>(response: Response, defaultValue: T): Promise<T> {
+  if (response.status === 204) return defaultValue
+  const text = await response.text()
+  if (!text) return defaultValue
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    return defaultValue
   }
-  return (await response.json()) as T
+}
+
+async function jsonOrNull<T>(response: Response): Promise<T | null> {
+  return safeJson<T | null>(response, null)
 }
 
 async function collectCursorPages<T>(
@@ -249,30 +257,30 @@ export const solCore = {
   homes: {
     list: (params?: { cursor?: string; limit?: number }) =>
       solFetch(`/api/v1/homes${buildQuery(params ?? {})}`).then(async (r) =>
-        normalizeCursorResponse<Home>((await r.json()) as RawCursorResponse<Home>),
+        normalizeCursorResponse<Home>(await safeJson<RawCursorResponse<Home>>(r, {})),
       ),
     get: (id: string) =>
-      solFetch(`/api/v1/homes/${id}`).then((r) => r.json() as Promise<Home>),
+      solFetch(`/api/v1/homes/${id}`).then((r) => safeJson<Home>(r, {} as Home)),
     create: (body: { name: string }) =>
       solFetch("/api/v1/homes", {
         method: "POST",
         body: JSON.stringify(body),
-      }).then((r) => r.json() as Promise<Home>),
+      }).then((r) => safeJson<Home>(r, {} as Home)),
     listMembers: (id: string, params?: { cursor?: string; limit?: number }) =>
       solFetch(`/api/v1/homes/${id}/members${buildQuery(params ?? {})}`).then(async (r) =>
-        normalizeCursorResponse<HomeMember>((await r.json()) as RawCursorResponse<HomeMember>),
+        normalizeCursorResponse<HomeMember>(await safeJson<RawCursorResponse<HomeMember>>(r, {})),
       ),
     inviteByEmail: (id: string, body: { email: string }) =>
       solFetch(`/api/v1/homes/${id}/invitations`, {
         method: "POST",
         body: JSON.stringify(body),
-      }).then((r) => r.json() as Promise<HomeInvitation>),
+      }).then((r) => safeJson<HomeInvitation>(r, {} as HomeInvitation)),
     listInvitations: (
       id: string,
       params?: { status?: InvitationStatus; cursor?: string; limit?: number },
     ) =>
       solFetch(`/api/v1/homes/${id}/invitations${buildQuery(params ?? {})}`).then(async (r) =>
-        normalizeCursorResponse<HomeInvitation>((await r.json()) as RawCursorResponse<HomeInvitation>),
+        normalizeCursorResponse<HomeInvitation>(await safeJson<RawCursorResponse<HomeInvitation>>(r, {})),
       ),
     cancelInvitation: (homeID: string, invitationID: string) =>
       solFetch(`/api/v1/homes/${homeID}/invitations/${invitationID}`, {
@@ -290,12 +298,12 @@ export const solCore = {
   invitations: {
     getPublic: (token: string) =>
       solPublicFetch(`/api/v1/invitations/${token}`).then((r) =>
-        r.json() as Promise<InvitationDetail>,
+        safeJson<InvitationDetail>(r, {} as InvitationDetail),
       ),
     accept: (token: string) =>
       solFetch(`/api/v1/invitations/${token}/accept`, {
         method: "POST",
-      }).then((r) => r.json() as Promise<Home>),
+      }).then((r) => safeJson<Home>(r, {} as Home)),
     declinePublic: (token: string) =>
       solPublicFetch(`/api/v1/invitations/${token}/decline`, {
         method: "POST",
@@ -305,19 +313,19 @@ export const solCore = {
   devices: {
     list: (params?: { cursor?: string; limit?: number }) =>
       solFetch(`/api/v1/devices${buildQuery(params ?? {})}`).then(async (r) =>
-        normalizeCursorResponse<RoomDevice>((await r.json()) as RawCursorResponse<RoomDevice>),
+        normalizeCursorResponse<RoomDevice>(await safeJson<RawCursorResponse<RoomDevice>>(r, {})),
       ),
     listAll: (limit = 100) =>
       collectCursorPages<RoomDevice>((cursor) =>
         solCore.devices.list({ cursor, limit }),
       ),
-    get: (id: string) => solFetch(`/api/v1/devices/${id}`).then((r) => r.json()),
-    provision: (id: string) => solFetch(`/api/v1/devices/${id}/provision`).then((r) => r.json()),
+    get: (id: string) => solFetch(`/api/v1/devices/${id}`).then((r) => safeJson<RoomDevice>(r, {} as RoomDevice)),
+    provision: (id: string) => solFetch(`/api/v1/devices/${id}/provision`).then((r) => safeJson<any>(r, {})),
     create: (body: unknown) =>
       solFetch("/api/v1/devices", {
         method: "POST",
         body: JSON.stringify(body),
-      }).then((r) => r.json()),
+      }).then((r) => safeJson<RoomDevice>(r, {} as RoomDevice)),
     update: (id: string, body: unknown) =>
       solFetch(`/api/v1/devices/${id}`, {
         method: "PUT",
@@ -328,15 +336,15 @@ export const solCore = {
       solFetch(`/api/v1/devices/${id}/command`, {
         method: "POST",
         body: JSON.stringify(body),
-      }).then((r) => r.json()),
+      }).then((r) => safeJson<any>(r, {})),
     getTelemetry: (id: string, limit: number = 100) =>
-      solFetch(`/api/v1/devices/${id}/telemetry?limit=${limit}`).then((r) => r.json() as Promise<TelemetryPoint[]>),
+      solFetch(`/api/v1/devices/${id}/telemetry?limit=${limit}`).then((r) => safeJson<TelemetryPoint[]>(r, [])),
   },
 
   rooms: {
     list: (homeID: string, params?: { cursor?: string; limit?: number }) =>
       solFetch(`/api/v1/homes/${homeID}/rooms${buildQuery(params ?? {})}`).then(async (r) =>
-        normalizeCursorResponse<Room>((await r.json()) as RawCursorResponse<Room>),
+        normalizeCursorResponse<Room>(await safeJson<RawCursorResponse<Room>>(r, {})),
       ),
     listAll: (homeID: string, limit = 100) =>
       collectCursorPages<Room>((cursor) => solCore.rooms.list(homeID, { cursor, limit })),
@@ -344,27 +352,27 @@ export const solCore = {
       solFetch(`/api/v1/homes/${homeID}/rooms`, {
         method: "POST",
         body: JSON.stringify(body),
-      }).then((r) => r.json() as Promise<Room>),
+      }).then((r) => safeJson<Room>(r, {} as Room)),
     get: (homeID: string, roomID: string) =>
-      solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}`).then((r) => r.json() as Promise<Room>),
+      solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}`).then((r) => safeJson<Room>(r, {} as Room)),
     update: (homeID: string, roomID: string, body: Partial<{ name: string; floor: number }>) =>
       solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}`, {
         method: "PUT",
         body: JSON.stringify(body),
-      }).then((r) => r.json() as Promise<Room>),
+      }).then((r) => safeJson<Room>(r, {} as Room)),
     delete: (homeID: string, roomID: string) =>
       solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}`, { method: "DELETE" }).then((r) =>
         jsonOrNull(r),
       ),
     activity: (homeID: string, roomID: string, limit: number = 20) =>
       solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/activity?limit=${limit}`).then((r) =>
-        r.json() as Promise<{ data: ActivityLog[] }>,
+        safeJson<{ data: ActivityLog[] }>(r, { data: [] }),
       ),
     devices: {
       list: (homeID: string, roomID: string, params?: { cursor?: string; limit?: number }) =>
         solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/devices${buildQuery(params ?? {})}`).then(
           async (r) =>
-            normalizeCursorResponse<RoomDevice>((await r.json()) as RawCursorResponse<RoomDevice>),
+            normalizeCursorResponse<RoomDevice>(await safeJson<RawCursorResponse<RoomDevice>>(r, {})),
         ),
       listAll: (homeID: string, roomID: string, limit = 100) =>
         collectCursorPages<RoomDevice>((cursor) =>
@@ -378,7 +386,7 @@ export const solCore = {
         solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/devices`, {
           method: "POST",
           body: JSON.stringify(body),
-        }).then((r) => r.json() as Promise<RoomDevice>),
+        }).then((r) => safeJson<RoomDevice>(r, {} as RoomDevice)),
       command: (
         homeID: string,
         roomID: string,
@@ -407,9 +415,9 @@ export const solCore = {
       solFetch("/api/v1/appliances", {
         method: "POST",
         body: JSON.stringify(body),
-      }).then((r) => r.json() as Promise<Appliance>),
+      }).then((r) => safeJson<Appliance>(r, {} as Appliance)),
     get: (id: string) =>
-      solFetch(`/api/v1/appliances/${id}`).then((r) => r.json() as Promise<Appliance>),
+      solFetch(`/api/v1/appliances/${id}`).then((r) => safeJson<Appliance>(r, {} as Appliance)),
     update: (id: string, body: Partial<Appliance>) =>
       solFetch(`/api/v1/appliances/${id}`, {
         method: "PUT",
@@ -419,48 +427,48 @@ export const solCore = {
       solFetch(`/api/v1/appliances/${id}`, { method: "DELETE" }).then((r) => jsonOrNull(r)),
     listByRoom: (homeID: string, roomID: string) =>
       solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/appliances`).then((r) =>
-        r.json() as Promise<{ data: Appliance[] }>,
+        safeJson<{ data: Appliance[] }>(r, { data: [] }),
       ),
   },
 
   automations: {
-    list: () => solFetch("/api/v1/automations").then((r) => r.json()),
-    get: (id: string) => solFetch(`/api/v1/automations/${id}`).then((r) => r.json()),
+    list: () => solFetch("/api/v1/automations").then((r) => safeJson<any[]>(r, [])),
+    get: (id: string) => solFetch(`/api/v1/automations/${id}`).then((r) => safeJson<any>(r, {})),
     create: (body: unknown) =>
       solFetch("/api/v1/automations", {
         method: "POST",
         body: JSON.stringify(body),
-      }).then((r) => r.json()),
+      }).then((r) => safeJson<any>(r, {})),
     update: (id: string, body: unknown) =>
       solFetch(`/api/v1/automations/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
-      }).then((r) => r.json()),
+      }).then((r) => safeJson<any>(r, {})),
     delete: (id: string) => solFetch(`/api/v1/automations/${id}`, { method: "DELETE" }),
   },
 
   firmware: {
     list: (templateID?: string) =>
       solFetch(`/api/v1/firmware${templateID ? `?template_id=${encodeURIComponent(templateID)}` : ""}`).then(
-        (r) => r.json() as Promise<FirmwareVersion[]>,
+        (r) => safeJson<FirmwareVersion[]>(r, []),
       ),
     upload: (formData: FormData) =>
       solFetch("/api/v1/firmware/upload", {
         method: "POST",
         body: formData,
-      }).then((r) => r.json() as Promise<FirmwareVersion>),
+      }).then((r) => safeJson<FirmwareVersion>(r, {} as FirmwareVersion)),
     build: (templateID: string, targetBoard: string) =>
       solFetch("/api/v1/firmware/build", {
         method: "POST",
         body: JSON.stringify({ template_id: templateID, target_board: targetBoard }),
-      }).then((r) => r.json() as Promise<{ id: string }>),
+      }).then((r) => safeJson<{ id: string }>(r, { id: "" })),
     getBuild: (id: string) =>
-      solFetch(`/api/v1/firmware/builds/${id}`).then((r) => r.json() as Promise<FirmwareBuild>),
+      solFetch(`/api/v1/firmware/builds/${id}`).then((r) => safeJson<FirmwareBuild>(r, {} as FirmwareBuild)),
     listTargets: () =>
-      solFetch("/api/v1/firmware/targets").then((r) => r.json() as Promise<string[]>),
+      solFetch("/api/v1/firmware/targets").then((r) => safeJson<string[]>(r, [])),
     presignedUrl: (id: string) =>
       solFetch(`/api/v1/firmware/versions/${id}/presigned-url`).then((r) =>
-        r.json() as Promise<{ url: string }>,
+        safeJson<{ url: string }>(r, { url: "" }),
       ),
   },
 }

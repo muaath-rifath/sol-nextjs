@@ -9,6 +9,7 @@ import {
   IconUsb,
   IconWifi,
   IconWifiOff,
+  IconX,
 } from "@tabler/icons-react"
 import ClearSearchParams from "@/components/ClearSearchParams"
 import Link from "next/link"
@@ -159,11 +160,11 @@ export default async function RoomDetailPage({
     }
 
     try {
-      const params: Record<string, unknown> = { isOn: turnOn }
+      const params: Record<string, unknown> = { power: turnOn }
       if (channelStr) params.channel = parseInt(channelStr, 10)
 
       await solCore.rooms.devices.command(homeId, roomId, deviceID, {
-        action: "set_relay",
+        action: "relay_set",
         params,
       })
       redirect(roomHref(homeId, roomId, { notice: "Command sent" }))
@@ -357,7 +358,7 @@ export default async function RoomDetailPage({
               <div className="grid gap-4 sm:grid-cols-2">
                 {primaryDevice ? (
                   <form action={otaAction} className="contents">
-                    <input type="hidden" name="device_id" value={primaryDevice.id} />
+                    <input type="hidden" name="device_id" value={primaryDevice.id ?? ""} />
                     <input
                       type="hidden"
                       name="firmware_version_id"
@@ -553,7 +554,7 @@ export default async function RoomDetailPage({
                           </p>
                         </div>
                         <form action={toggleDeviceAction}>
-                          <input type="hidden" name="device_id" value={device.id} />
+                          <input type="hidden" name="device_id" value={device.id ?? ""} />
                           <input type="hidden" name="turn_on" value={isOn ? "0" : "1"} />
                           <button
                             type="submit"
@@ -566,11 +567,11 @@ export default async function RoomDetailPage({
 
                       <div className="mt-3 grid gap-2 md:grid-cols-[1fr_auto_auto]">
                         <form action={updateDeviceAction} className="flex gap-2">
-                          <input type="hidden" name="device_id" value={device.id} />
+                          <input type="hidden" name="device_id" value={device.id ?? ""} />
                           <input
                             type="text"
                             name="name"
-                            defaultValue={device.name}
+                            defaultValue={device.name ?? ""}
                             className="clay-inset min-w-0 flex-1 rounded-xl border border-white/50 px-3 py-2 text-sm text-on-surface"
                           />
                           <button type="submit" className="btn-outline rounded-xl px-3 py-2 text-xs font-semibold">
@@ -579,7 +580,7 @@ export default async function RoomDetailPage({
                         </form>
 
                         <form action={deleteDeviceAction}>
-                          <input type="hidden" name="device_id" value={device.id} />
+                          <input type="hidden" name="device_id" value={device.id ?? ""} />
                           <button
                             type="submit"
                             className="rounded-xl border border-error px-3 py-2 text-xs font-semibold text-error hover:bg-error-container"
@@ -590,11 +591,11 @@ export default async function RoomDetailPage({
 
                         {firmwareVersions.length > 0 && (
                           <form action={otaAction} className="flex gap-2">
-                            <input type="hidden" name="device_id" value={device.id} />
+                            <input type="hidden" name="device_id" value={device.id ?? ""} />
                             <select
                               name="firmware_version_id"
                               className="clay-inset rounded-xl border border-white/50 px-2 py-2 text-xs text-on-surface"
-                              defaultValue={firmwareVersions[0]?.id}
+                              defaultValue={firmwareVersions[0]?.id ?? ""}
                             >
                               {firmwareVersions.map((fw) => (
                                 <option key={fw.id} value={fw.id}>
@@ -618,63 +619,58 @@ export default async function RoomDetailPage({
                         if (deviceAppliances.length === 0) return null
                         return (
                           <div className="mt-4 border-t border-white/20 pt-4">
-                            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-outline">
-                              Appliances
-                            </h4>
-                            <div className="grid gap-2">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="text-[10px] font-bold uppercase tracking-[0.15em] text-outline">
+                                Appliances
+                              </h4>
+                              <span className="h-px flex-1 bg-white/10 mx-3" />
+                            </div>
+                            <div className="space-y-1.5">
                               {deviceAppliances.map((app) => {
                                 const isOn = coerceBool(app.state?.isOn)
                                 return (
                                   <div
                                     key={app.id}
-                                    className="flex flex-col gap-2 rounded-xl border border-outline-variant/30 bg-surface p-3 shadow-sm"
+                                    className="group relative flex items-center justify-between gap-3 rounded-xl border border-white/40 bg-surface/40 p-2 pl-3 shadow-sm transition hover:bg-surface/60"
                                   >
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                      <div>
-                                        <p className="text-sm font-semibold text-on-surface">{app.name}</p>
-                                        <p className="text-xs text-on-surface-variant">
-                                          {app.type} · Channel {app.channel ?? "?"} · Active Low:{" "}
-                                          {String(app.active_low)} · isOn: {String(isOn)}
-                                        </p>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <p className="truncate text-sm font-semibold text-on-surface">{app.name}</p>
+                                        <span className={`h-1.5 w-1.5 rounded-full ${isOn ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "bg-stone-400"}`} />
                                       </div>
+                                      <p className="truncate text-[10px] text-on-surface-variant/80">
+                                        {app.type} · Ch {app.channel ?? "?"}
+                                      </p>
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5">
                                       <form action={toggleDeviceAction}>
-                                        <input type="hidden" name="device_id" value={device.id} />
+                                        <input type="hidden" name="device_id" value={device.id ?? ""} />
                                         <input type="hidden" name="channel" value={app.channel ?? ""} />
                                         <input type="hidden" name="turn_on" value={isOn ? "0" : "1"} />
                                         <button
                                           type="submit"
-                                          className="rounded-full border border-primary-container bg-primary-fixed px-3 py-1 text-xs font-semibold text-on-primary-fixed-variant"
+                                          className={`rounded-lg border px-3 py-1 text-[11px] font-bold transition-all ${isOn
+                                            ? "border-primary-container bg-primary-fixed text-on-primary-fixed-variant shadow-sm"
+                                            : "border-outline-variant bg-surface-container-low text-on-surface-variant hover:border-outline hover:bg-surface-container-high"
+                                            }`}
                                         >
-                                          {isOn ? "Turn off" : "Turn on"}
-                                        </button>
-                                      </form>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <form action={updateApplianceAction} className="flex min-w-0 flex-1 gap-2">
-                                        <input type="hidden" name="appliance_id" value={app.id} />
-                                        <input
-                                          type="text"
-                                          name="name"
-                                          defaultValue={app.name}
-                                          className="clay-inset min-w-0 flex-1 rounded-lg border border-white/50 px-2 py-1 text-xs text-on-surface"
-                                        />
-                                        <button
-                                          type="submit"
-                                          className="btn-outline rounded-lg px-2 py-1 text-xs font-semibold"
-                                        >
-                                          Update
+                                          {isOn ? "On" : "Off"}
                                         </button>
                                       </form>
 
-                                      <form action={deleteApplianceAction}>
-                                        <input type="hidden" name="appliance_id" value={app.id} />
-                                        <button
-                                          type="submit"
-                                          className="rounded-lg border border-error px-2 py-1 text-xs font-semibold text-error hover:bg-error-container"
-                                        >
-                                          Delete
-                                        </button>
-                                      </form>
+                                      <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                                        <form action={deleteApplianceAction}>
+                                          <input type="hidden" name="appliance_id" value={app.id ?? ""} />
+                                          <button
+                                            type="submit"
+                                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-error/30 bg-error-container/20 text-error hover:bg-error-container/40"
+                                            title="Delete"
+                                          >
+                                            <IconX size={14} />
+                                          </button>
+                                        </form>
+                                      </div>
                                     </div>
                                   </div>
                                 )
