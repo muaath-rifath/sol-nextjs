@@ -224,6 +224,7 @@ export interface FirmwareVersion {
   app_key: string
   source_key?: string
   size_bytes: number | null
+  built_at?: string
   created_at: string
 }
 
@@ -251,6 +252,36 @@ export interface ActivityLog {
   description: string
   badge_text: string
   badge_color: string
+}
+
+export type OTAAttemptStatus =
+  | "initiated"
+  | "acknowledged"
+  | "downloading"
+  | "verifying"
+  | "updating"
+  | "cancelling"
+  | "cancelled"
+  | "timed_out"
+  | "updated"
+  | "failed"
+
+export interface OTAAttempt {
+  id: string
+  device_id: string
+  room_id: string
+  home_id: string
+  firmware_version_id: string
+  requested_by?: string
+  request_id: string
+  status: OTAAttemptStatus
+  progress_pct: number
+  logs: string
+  error_text?: string
+  started_at: string
+  finished_at?: string
+  created_at: string
+  updated_at: string
 }
 
 export const solCore = {
@@ -401,12 +432,38 @@ export const solCore = {
         homeID: string,
         roomID: string,
         deviceID: string,
-        body: { firmware_version_id: string },
+        body: { firmware_version_id: string; idempotency_key?: string },
       ) =>
         solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/devices/${deviceID}/ota`, {
           method: "POST",
           body: JSON.stringify(body),
-        }).then((r) => jsonOrNull(r)),
+        }).then((r) => safeJson<{ attempt_id: string; request_id: string; status: OTAAttemptStatus }>(r, {
+          attempt_id: "",
+          request_id: "",
+          status: "initiated",
+        })),
+    },
+    otaAttempts: {
+      list: (homeID: string, roomID: string, limit: number = 50) =>
+        solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/ota-attempts?limit=${limit}`).then((r) =>
+          safeJson<{ data: OTAAttempt[] }>(r, { data: [] }),
+        ),
+      retry: (homeID: string, roomID: string, attemptID: string) =>
+        solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/ota-attempts/${attemptID}/retry`, {
+          method: "POST",
+        }).then((r) => safeJson<{ attempt_id: string; request_id: string; status: OTAAttemptStatus }>(r, {
+          attempt_id: "",
+          request_id: "",
+          status: "initiated",
+        })),
+      cancel: (homeID: string, roomID: string, attemptID: string) =>
+        solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/ota-attempts/${attemptID}/cancel`, {
+          method: "POST",
+        }).then((r) => safeJson<{ attempt_id: string; request_id: string; status: OTAAttemptStatus }>(r, {
+          attempt_id: "",
+          request_id: "",
+          status: "cancelling",
+        })),
     },
   },
 
