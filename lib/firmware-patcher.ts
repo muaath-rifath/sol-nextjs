@@ -1,4 +1,4 @@
-export type FirmwareTemplateId = "rgb_led" | "relay_single" | "relay_4ch_gpio" | "env_sensor" | "smart_plug"
+export type FirmwareTemplateId = "switch"
 
 export interface FlashConfig {
   wifiSsid: string
@@ -8,7 +8,6 @@ export interface FlashConfig {
   mqttPassword: string
   deviceId: string
   templateId: FirmwareTemplateId
-  templateMode: number
   relayPins: [number, number, number, number]
   relayActiveLowMask: number
   mtls?: {
@@ -41,10 +40,9 @@ export const PATCH_BLOB_SIZE =
   SLOT_MAP.mqttPassword.fieldSize +
   SLOT_MAP.deviceId.fieldSize +
   SLOT_MAP.templateId.fieldSize +
-  1 +
   4 +
   1 +
-  10
+  11
 
 export const FIELD_OFFSETS = {
   wifiSsid: PATCH_SIGNATURE_FIELD_SIZE,
@@ -73,15 +71,6 @@ export const FIELD_OFFSETS = {
     SLOT_MAP.mqttUsername.fieldSize +
     SLOT_MAP.mqttPassword.fieldSize +
     SLOT_MAP.deviceId.fieldSize,
-  templateMode:
-    PATCH_SIGNATURE_FIELD_SIZE +
-    SLOT_MAP.wifiSsid.fieldSize +
-    SLOT_MAP.wifiPassword.fieldSize +
-    SLOT_MAP.mqttBrokerUri.fieldSize +
-    SLOT_MAP.mqttUsername.fieldSize +
-    SLOT_MAP.mqttPassword.fieldSize +
-    SLOT_MAP.deviceId.fieldSize +
-    SLOT_MAP.templateId.fieldSize,
   relayPins:
     PATCH_SIGNATURE_FIELD_SIZE +
     SLOT_MAP.wifiSsid.fieldSize +
@@ -90,8 +79,7 @@ export const FIELD_OFFSETS = {
     SLOT_MAP.mqttUsername.fieldSize +
     SLOT_MAP.mqttPassword.fieldSize +
     SLOT_MAP.deviceId.fieldSize +
-    SLOT_MAP.templateId.fieldSize +
-    1,
+    SLOT_MAP.templateId.fieldSize,
   relayActiveLowMask:
     PATCH_SIGNATURE_FIELD_SIZE +
     SLOT_MAP.wifiSsid.fieldSize +
@@ -101,7 +89,6 @@ export const FIELD_OFFSETS = {
     SLOT_MAP.mqttPassword.fieldSize +
     SLOT_MAP.deviceId.fieldSize +
     SLOT_MAP.templateId.fieldSize +
-    1 +
     4,
 } as const
 
@@ -298,12 +285,6 @@ export async function patchFirmware(bytes: Uint8Array, config: FlashConfig): Pro
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.mqttPassword, SLOT_MAP.mqttPassword.fieldSize, SLOT_MAP.mqttPassword.label, SLOT_MAP.mqttPassword.maxLength, config.mqttPassword, encoder)
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.deviceId, SLOT_MAP.deviceId.fieldSize, SLOT_MAP.deviceId.label, SLOT_MAP.deviceId.maxLength, config.deviceId, encoder)
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.templateId, SLOT_MAP.templateId.fieldSize, SLOT_MAP.templateId.label, SLOT_MAP.templateId.maxLength, config.templateId, encoder)
-
-  const templateMode = Number(config.templateMode)
-  if (!Number.isInteger(templateMode) || templateMode < 0 || templateMode > 255) {
-    throw new Error("Template mode must be an integer between 0 and 255.")
-  }
-  bytes[blobOffset + FIELD_OFFSETS.templateMode] = templateMode
 
   if (!Array.isArray(config.relayPins) || config.relayPins.length !== 4) {
     throw new Error("relayPins must include exactly 4 entries.")

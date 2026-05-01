@@ -168,10 +168,7 @@ export default async function FirmwarePage({
                   }}
                 >
                   <option value="">All templates</option>
-                  <option value="rgb_led">RGB LED</option>
-                  <option value="relay_single">Single Relay</option>
-                  <option value="relay_4ch_gpio">4CH Relay</option>
-                  <option value="universal">Universal</option>
+                  <option value="switch">Switch</option>
                 </select>
               </div>
             </div>
@@ -248,7 +245,7 @@ export default async function FirmwarePage({
                     type="text"
                     name="template_id"
                     required
-                    placeholder="e.g. universal"
+                    placeholder="e.g. switch"
                     className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>

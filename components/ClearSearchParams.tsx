@@ -7,7 +7,7 @@ import { useRouter, usePathname } from "next/navigation"
  * Strips the given query param keys from the URL via router.replace
  * so that flash messages disappear on refresh.
  */
-export default function ClearSearchParams({ keys }: { keys: string[] }) {
+export default function ClearSearchParams({ keys = [] }: { keys?: string[] }) {
     const router = useRouter()
     const pathname = usePathname()
 

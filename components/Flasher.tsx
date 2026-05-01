@@ -1,7 +1,6 @@
 "use client"
 
 import { patchFirmware, buildCertsPartition, type FlashConfig, type FirmwareTemplateId } from "@/lib/firmware-patcher"
-import { solCore } from "@/lib/sol-core"
 import { getDeviceProvisioning } from "@/lib/actions"
 import { IconAlertCircle, IconCheck, IconLoader2, IconX } from "@tabler/icons-react"
 import clsx from "clsx"
@@ -45,6 +44,7 @@ export default function Flasher({
   caCert,
 }: Props) {
   const [deviceID, setDeviceID] = useState<string>(devices[0]?.id ?? "")
+  const [selectedFirmwareId, setSelectedFirmwareId] = useState<string>(firmwareVersions[0]?.id ?? "")
   const [wifiSsid, setWifiSsid] = useState("")
   const [wifiPassword, setWifiPassword] = useState("")
   const [isBusy, setIsBusy] = useState(false)
@@ -60,14 +60,24 @@ export default function Flasher({
   )
 
   const selectedFirmware = useMemo(() => {
-    if (!selectedDevice) return firmwareVersions[0]
-    const fwId = selectedDevice.metadata?.firmware_id
-    if (fwId) {
-      const match = firmwareVersions.find((f) => f.id === fwId)
-      if (match) return match
+    return firmwareVersions.find((f) => f.id === selectedFirmwareId) ?? firmwareVersions[0]
+  }, [selectedFirmwareId, firmwareVersions])
+
+  useEffect(() => {
+    if (!selectedFirmwareId && firmwareVersions.length > 0) {
+      setSelectedFirmwareId(firmwareVersions[0].id)
     }
-    return firmwareVersions[0]
-  }, [selectedDevice, firmwareVersions])
+  }, [firmwareVersions, selectedFirmwareId])
+
+  function firmwareLabel(firmware: FirmwareVersion, index: number) {
+    const tags = []
+    if (index === 0) tags.push("latest")
+    if (selectedDevice?.metadata?.firmware_id === firmware.id) tags.push("assigned")
+
+    return tags.length
+      ? `${firmware.version} (${firmware.template_id}, ${tags.join(", ")})`
+      : `${firmware.version} (${firmware.template_id})`
+  }
 
   const addLog = useCallback((text: string, type: "info" | "error" | "success" = "info") => {
     setLogs((prev) => [...prev, { text, type }])
@@ -165,6 +175,7 @@ export default function Flasher({
     try {
       addLog("Starting flash process...")
       setStatus("Downloading firmware...")
+      addLog(`Selected firmware: ${selectedFirmware.version} (${selectedFirmware.template_id}, ${selectedFirmware.id})`)
       addLog(`Downloading firmware version ${selectedFirmware.version}...`)
       const response = await fetch(`/api/firmware/${selectedFirmware.id}`, { cache: "no-store" })
       if (!response.ok) {
@@ -173,9 +184,19 @@ export default function Flasher({
       const arrayBuffer = await response.arrayBuffer()
       const bytes = new Uint8Array(arrayBuffer)
 
-      addLog("Generating device mTLS certificates...")
-      const certBundle = await getDeviceProvisioning(deviceID)
-      addLog("Certificates generated successfully.")
+      let certBundle: { CertificatePEM: string; PrivateKeyPEM: string } | null = null
+      try {
+        addLog("Generating device mTLS certificates...")
+        certBundle = await getDeviceProvisioning(deviceID)
+        if (certBundle) {
+          addLog("Certificates generated successfully.")
+        } else {
+          addLog("mTLS is disabled on the server, skipping certificate generation.")
+        }
+      } catch (e) {
+        addLog(`Certificate generation failed: ${e instanceof Error ? e.message : "Unknown error"}`)
+        throw e
+      }
 
       setStatus("Patching firmware...")
       addLog("Patching SOLCFGv2 fields...")
@@ -186,15 +207,14 @@ export default function Flasher({
         mqttUsername: mqttUsername,
         mqttPassword: mqttPassword,
         deviceId: deviceID,
-        templateId: (selectedFirmware.template_id || defaultTemplate || "relay_single") as FirmwareTemplateId,
-        templateMode: 0,
+        templateId: (selectedFirmware.template_id || defaultTemplate || "switch") as FirmwareTemplateId,
         relayPins: [12, 13, 14, 15],
         relayActiveLowMask: 0,
-        mtls: {
+        mtls: certBundle ? {
           caCert: caCert, // We need to get the Root CA cert to the frontend
           clientCert: certBundle.CertificatePEM,
           clientKey: certBundle.PrivateKeyPEM,
-        },
+        } : undefined,
       } as FlashConfig)
 
       // Build certs partition binary (64KB at 0x610000)
@@ -244,6 +264,11 @@ export default function Flasher({
           },
           // Write the certs partition to 0x610000 (matches partitions.csv)
           ...(certsPartition ? [{ address: 0x610000, data: certsPartition }] : []),
+          // Reset OTA data to force boot from ota_0
+          {
+            address: 0xe000,
+            data: new Uint8Array(8192).fill(0xff),
+          },
         ],
         flashSize: "keep",
         flashMode: "keep",
@@ -287,6 +312,21 @@ export default function Flasher({
         </label>
 
         <label className="text-xs font-semibold text-on-surface-variant">
+          Firmware Version
+          <select
+            value={selectedFirmwareId}
+            onChange={(e) => setSelectedFirmwareId(e.target.value)}
+            className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface"
+          >
+            {firmwareVersions.map((f, index) => (
+              <option key={f.id} value={f.id}>
+                {firmwareLabel(f, index)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="col-span-full text-xs font-semibold text-on-surface-variant md:col-span-1">
           Wi-Fi SSID
           <input value={wifiSsid} onChange={(e) => setWifiSsid(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
         </label>
@@ -380,4 +420,3 @@ export default function Flasher({
     </div>
   )
 }
-

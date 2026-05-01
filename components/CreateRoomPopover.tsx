@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { IconX } from "@tabler/icons-react"
 
+import Portal from "./ui/portal"
+
 interface Props {
   createRoomAction: (formData: FormData) => Promise<void>
 }
@@ -33,10 +35,11 @@ export default function CreateRoomPopover({ createRoomAction }: Props) {
       </button>
 
       {open ? (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/35 p-4"
-          onClick={() => setOpen(false)}
-        >
+        <Portal>
+          <div
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/35 p-4"
+            onClick={() => setOpen(false)}
+          >
           <div
             className="w-full max-w-md rounded-3xl border border-white/65 bg-surface-container p-6 shadow-[16px_16px_34px_rgba(27,28,25,0.18),-16px_-16px_34px_rgba(255,255,255,0.88)]"
             onClick={(event) => event.stopPropagation()}
@@ -83,6 +86,7 @@ export default function CreateRoomPopover({ createRoomAction }: Props) {
             </form>
           </div>
         </div>
+      </Portal>
       ) : null}
     </>
   )

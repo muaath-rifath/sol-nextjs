@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+// auth is dynamically imported in solFetch on the server side
 
 const SOL_CORE_URL = process.env.SOL_CORE_URL!
 
@@ -41,16 +41,22 @@ async function getErrorMessage(response: Response): Promise<string> {
 }
 
 async function solFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const session = await auth()
-  if (!session?.accessToken) {
-    throw new Error("No active session")
+  // Determine if we are on the server (where `auth` is available) or client.
+  let session: { accessToken?: string } | null = null
+  if (typeof window === "undefined") {
+    // Server side: dynamically import auth to avoid bundling it on the client.
+    const { auth } = await import("@/auth")
+    session = await auth()
   }
+  // On the client, we skip auth and rely on cookies/session handling by the backend.
 
   const headers = new Headers(init.headers)
   if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json")
   }
-  headers.set("Authorization", `Bearer ${session.accessToken}`)
+  if (session?.accessToken) {
+    headers.set("Authorization", `Bearer ${session.accessToken}`)
+  }
 
   const response = await fetch(`${SOL_CORE_URL}${path}`, {
     ...init,
@@ -239,6 +245,14 @@ export interface FirmwareBuild {
   updated_at: string
 }
 
+export type DeviceProvisioning = {
+  CertificatePEM: string
+  PrivateKeyPEM: string
+}
+
+export type CommandResponse = Record<string, unknown>
+export type Automation = Record<string, unknown>
+
 export interface TelemetryPoint {
   device_id: string
   timestamp: string
@@ -351,7 +365,10 @@ export const solCore = {
         solCore.devices.list({ cursor, limit }),
       ),
     get: (id: string) => solFetch(`/api/v1/devices/${id}`).then((r) => safeJson<RoomDevice>(r, {} as RoomDevice)),
-    provision: (id: string) => solFetch(`/api/v1/devices/${id}/provision`).then((r) => safeJson<any>(r, {})),
+    provision: (id: string) =>
+      solFetch(`/api/v1/devices/${id}/provision`).then((r) =>
+        safeJson<DeviceProvisioning>(r, {} as DeviceProvisioning),
+      ),
     create: (body: unknown) =>
       solFetch("/api/v1/devices", {
         method: "POST",
@@ -367,7 +384,7 @@ export const solCore = {
       solFetch(`/api/v1/devices/${id}/command`, {
         method: "POST",
         body: JSON.stringify(body),
-      }).then((r) => safeJson<any>(r, {})),
+      }).then((r) => safeJson<CommandResponse>(r, {})),
     getTelemetry: (id: string, limit: number = 100) =>
       solFetch(`/api/v1/devices/${id}/telemetry?limit=${limit}`).then((r) => safeJson<TelemetryPoint[]>(r, [])),
   },
@@ -489,18 +506,18 @@ export const solCore = {
   },
 
   automations: {
-    list: () => solFetch("/api/v1/automations").then((r) => safeJson<any[]>(r, [])),
-    get: (id: string) => solFetch(`/api/v1/automations/${id}`).then((r) => safeJson<any>(r, {})),
+    list: () => solFetch("/api/v1/automations").then((r) => safeJson<Automation[]>(r, [])),
+    get: (id: string) => solFetch(`/api/v1/automations/${id}`).then((r) => safeJson<Automation>(r, {})),
     create: (body: unknown) =>
       solFetch("/api/v1/automations", {
         method: "POST",
         body: JSON.stringify(body),
-      }).then((r) => safeJson<any>(r, {})),
+      }).then((r) => safeJson<Automation>(r, {})),
     update: (id: string, body: unknown) =>
       solFetch(`/api/v1/automations/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
-      }).then((r) => safeJson<any>(r, {})),
+      }).then((r) => safeJson<Automation>(r, {})),
     delete: (id: string) => solFetch(`/api/v1/automations/${id}`, { method: "DELETE" }),
   },
 

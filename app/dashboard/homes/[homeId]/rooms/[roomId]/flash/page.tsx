@@ -31,7 +31,7 @@ export default async function FlashPage({
   }))
 
   return (
-    <div className="bg-clay-canvas min-h-screen px-4 py-8 sm:px-8">
+    <div className="flex-1 overflow-y-auto p-6 md:p-8">
       <div className="mx-auto w-full max-w-5xl space-y-5">
         <header className="rounded-[2rem] border border-white/60 bg-surface-container-low p-6 shadow-[10px_10px_24px_rgba(87,66,62,0.12),-10px_-10px_24px_rgba(255,255,255,0.92)]">
           <div className="flex flex-wrap items-center justify-between gap-4">

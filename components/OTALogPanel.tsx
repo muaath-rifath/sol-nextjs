@@ -1,6 +1,7 @@
 "use client"
 
-import { solCore, type OTAAttempt, type OTAAttemptStatus } from "@/lib/sol-core"
+import { type OTAAttempt, type OTAAttemptStatus } from "@/lib/sol-core"
+import { cancelOTAAction, listOTAAttemptsAction, retryOTAAction } from "@/lib/actions"
 import { IconLoader2, IconRefresh, IconX } from "@tabler/icons-react"
 import clsx from "clsx"
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -143,8 +144,10 @@ export default function OTALogPanel({ homeId, roomId, devices, initialAttempts }
     const poll = window.setInterval(async () => {
       if (closed) return
       try {
-        const res = await solCore.rooms.otaAttempts.list(homeId, roomId, 50)
-        setAttempts(res.data)
+        const res = await listOTAAttemptsAction(homeId, roomId, 50)
+        if (res.data) {
+          setAttempts(res.data)
+        }
       } catch {
         // ignore periodic refresh failures
       }
@@ -163,9 +166,11 @@ export default function OTALogPanel({ homeId, roomId, devices, initialAttempts }
     }
     setIsRetrying(true)
     try {
-      await solCore.rooms.otaAttempts.retry(homeId, roomId, activeAttempt.id)
-      const refreshed = await solCore.rooms.otaAttempts.list(homeId, roomId, 50)
-      setAttempts(refreshed.data)
+      await retryOTAAction(homeId, roomId, activeAttempt.id)
+      const refreshed = await listOTAAttemptsAction(homeId, roomId, 50)
+      if (refreshed.data) {
+        setAttempts(refreshed.data)
+      }
     } finally {
       setIsRetrying(false)
     }
@@ -177,9 +182,11 @@ export default function OTALogPanel({ homeId, roomId, devices, initialAttempts }
     }
     setIsCancelling(true)
     try {
-      await solCore.rooms.otaAttempts.cancel(homeId, roomId, activeAttempt.id)
-      const refreshed = await solCore.rooms.otaAttempts.list(homeId, roomId, 50)
-      setAttempts(refreshed.data)
+      await cancelOTAAction(homeId, roomId, activeAttempt.id)
+      const refreshed = await listOTAAttemptsAction(homeId, roomId, 50)
+      if (refreshed.data) {
+        setAttempts(refreshed.data)
+      }
     } finally {
       setIsCancelling(false)
     }
