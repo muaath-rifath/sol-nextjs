@@ -143,6 +143,10 @@ export default function Flasher({
       setStatus("No firmware binary uploaded yet — go to Manage Firmware and upload one first")
       return
     }
+    if (!wifiSsid.trim()) {
+      setStatus("Please enter a Wi-Fi SSID")
+      return
+    }
 
     const nav = navigator as Navigator & {
       serial?: {

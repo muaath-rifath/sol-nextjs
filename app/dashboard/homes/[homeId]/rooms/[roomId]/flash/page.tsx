@@ -62,10 +62,10 @@ export default async function FlashPage({
         <Flasher
           firmwareVersions={flashFirmware}
           devices={flashDevices}
-          mqttBrokerUrl={process.env.NEXT_PUBLIC_MQTT_BROKER_URL ?? "ssl://mqtt.sol.muaathrifath.me:8883"}
+          mqttBrokerUrl={process.env.NEXT_PUBLIC_MQTT_BROKER_URL ?? "mqtts://mqtt.sol.muaathrifath.me:8883"}
           mqttUsername={process.env.NEXT_PUBLIC_MQTT_USERNAME ?? ""}
           mqttPassword={process.env.NEXT_PUBLIC_MQTT_PASSWORD ?? ""}
-          caCert={process.env.NEXT_PUBLIC_MQTT_CA_CERT ?? ""}
+          caCert={(process.env.NEXT_PUBLIC_MQTT_CA_CERT ?? "").replace(/\\n/g, "\n")}
         />
       </div>
     </div>
