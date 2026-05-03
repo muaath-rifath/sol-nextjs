@@ -98,6 +98,10 @@ export const CERT_OFFSETS = {
   clientKey: 0x2000,
 } as const
 
+// Matches partitions.csv: config, data, nvs, 0x620000, 0x6000
+export const CONFIG_PARTITION_OFFSET = 0x620000
+export const CONFIG_PARTITION_SIZE = 0x6000
+
 function readUInt32LE(bytes: Uint8Array, offset: number): number {
   return (
     bytes[offset] |

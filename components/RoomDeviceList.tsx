@@ -46,8 +46,9 @@ export default function RoomDeviceList({
   const [devices, setDevices] = useState<RoomDevice[]>(initialDevices)
   const [appliances, setAppliances] = useState<Appliance[]>(initialAppliances)
 
-  // Track pending commands to show optimistic updates
   const pendingRef = useRef<Map<string, boolean>>(new Map())
+  // Maps correlationId → {applianceId, previousIsOn} for rollback on failure
+  const pendingCommandsRef = useRef<Map<string, { applianceId: string; previousIsOn: boolean }>>(new Map())
 
   useEffect(() => {
     const unsubDevice = subscribe("device.state", (raw) => {
@@ -65,6 +66,13 @@ export default function RoomDeviceList({
     const unsubAppliance = subscribe("appliance.state", (raw) => {
       const data = raw as ApplianceStateEvent
       if (!data?.appliance_id) return
+      // Device confirmed its real state — clear any pending optimistic entry.
+      pendingRef.current.delete(data.appliance_id)
+      for (const [cid, entry] of pendingCommandsRef.current) {
+        if (entry.applianceId === data.appliance_id) {
+          pendingCommandsRef.current.delete(cid)
+        }
+      }
       setAppliances((prev) =>
         prev.map((a) =>
           a.id === data.appliance_id ? { ...a, state: data.state } : a
@@ -81,9 +89,11 @@ export default function RoomDeviceList({
   const toggle = useCallback(
     (deviceId: string, channel: number, currentlyOn: boolean, applianceId: string) => {
       const turnOn = !currentlyOn
+      const correlationId = crypto.randomUUID()
 
-      // Optimistic update
       pendingRef.current.set(applianceId, turnOn)
+      pendingCommandsRef.current.set(correlationId, { applianceId, previousIsOn: currentlyOn })
+
       setAppliances((prev) =>
         prev.map((a) =>
           a.id === applianceId ? { ...a, state: { ...a.state, isOn: turnOn } } : a
@@ -92,7 +102,7 @@ export default function RoomDeviceList({
 
       send({
         type: "device.command",
-        correlationId: crypto.randomUUID(),
+        correlationId,
         data: {
           home_id: homeId,
           room_id: roomId,
@@ -105,14 +115,21 @@ export default function RoomDeviceList({
     [homeId, roomId, send]
   )
 
-  // Roll back optimistic updates on command.ack failure
   useEffect(() => {
     const unsub = subscribe("command.ack", (raw) => {
       const data = raw as { correlationId?: string; success?: boolean }
-      if (!data || data.success !== false) return
-      // On failure, re-sync from server state by forcing a device state refresh isn't
-      // straightforward here, so we revert the last pending change isn't tracked per-ack.
-      // The next real device.state event will correct any drift.
+      if (!data?.correlationId || data.success !== false) return
+      const pending = pendingCommandsRef.current.get(data.correlationId)
+      if (!pending) return
+      pendingCommandsRef.current.delete(data.correlationId)
+      pendingRef.current.delete(pending.applianceId)
+      setAppliances((prev) =>
+        prev.map((a) =>
+          a.id === pending.applianceId
+            ? { ...a, state: { ...a.state, isOn: pending.previousIsOn } }
+            : a
+        )
+      )
     })
     return unsub
   }, [subscribe])

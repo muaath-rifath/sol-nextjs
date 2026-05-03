@@ -1,6 +1,6 @@
 "use client"
 
-import { patchFirmware, buildCertsPartition, type FlashConfig, type FirmwareTemplateId } from "@/lib/firmware-patcher"
+import { patchFirmware, buildCertsPartition, type FlashConfig, type FirmwareTemplateId, CONFIG_PARTITION_OFFSET, CONFIG_PARTITION_SIZE } from "@/lib/firmware-patcher"
 import { getDeviceProvisioning } from "@/lib/actions"
 import { IconAlertCircle, IconCheck, IconLoader2, IconX } from "@tabler/icons-react"
 import clsx from "clsx"
@@ -272,6 +272,12 @@ export default function Flasher({
           {
             address: 0xe000,
             data: new Uint8Array(8192).fill(0xff),
+          },
+          // Erase the config NVS partition so the freshly-patched blob is
+          // picked up on first boot instead of stale NVS values.
+          {
+            address: CONFIG_PARTITION_OFFSET,
+            data: new Uint8Array(CONFIG_PARTITION_SIZE).fill(0xff),
           },
         ],
         flashSize: "keep",
