@@ -338,6 +338,15 @@ export const solCore = {
         method: "POST",
         body: JSON.stringify({ user_id: userID }),
       }).then((r) => jsonOrNull(r)),
+    removeMember: (homeID: string, userID: string) =>
+      solFetch(`/api/v1/homes/${homeID}/members/${userID}`, {
+        method: "DELETE",
+      }).then((r) => jsonOrNull(r)),
+    updateMemberRole: (homeID: string, userID: string, role: MemberRole) =>
+      solFetch(`/api/v1/homes/${homeID}/members/${userID}/role`, {
+        method: "PATCH",
+        body: JSON.stringify({ role }),
+      }).then((r) => jsonOrNull(r)),
   },
 
   invitations: {
