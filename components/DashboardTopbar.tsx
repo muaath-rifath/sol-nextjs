@@ -1,12 +1,55 @@
 import { auth } from "@/auth"
-import { IconBell, IconMenu2, IconSearch, IconSettings } from "@tabler/icons-react"
-import Image from "next/image"
-import Link from "next/link"
+import { IconBell, IconMenu2, IconSearch } from "@tabler/icons-react"
+import UserMenu from "./UserMenu"
 import { redirect } from "next/navigation"
+import { federatedLogout } from "@/app/actions"
+import { zitadelAccount } from "@/lib/zitadel-account"
 
-export default async function DashboardTopbar() {
+interface DashboardTopbarProps {
+  homeId?: string
+}
+
+export default async function DashboardTopbar({ homeId }: DashboardTopbarProps) {
   const session = await auth()
   if (!session) redirect("/")
+
+  function isMeaningful(v: unknown): v is string {
+    if (typeof v !== "string") return false
+    const t = v.trim()
+    return t.length > 0 && t !== "undefined" && t !== "undefined undefined"
+  }
+
+  let name: string | null | undefined = isMeaningful(session.user?.name) ? session.user!.name : undefined
+  let email = session.user?.email
+  let image = session.user?.image
+
+  if (!name && session.accessToken) {
+    try {
+      const issuer = process.env.AUTH_ZITADEL_ISSUER
+      const res = await fetch(`${issuer}/oidc/v1/userinfo`, {
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+      })
+      if (res.ok) {
+        const info = await res.json()
+        const composed = [info.given_name, info.family_name]
+          .filter((s: unknown) => isMeaningful(s))
+          .join(" ")
+          .trim()
+        name =
+          (isMeaningful(info.name) ? info.name : "") ||
+          composed ||
+          (isMeaningful(info.preferred_username) ? info.preferred_username : "") ||
+          (isMeaningful(info.email) ? info.email : "") ||
+          undefined
+        if (isMeaningful(info.email)) email = info.email
+        if (isMeaningful(info.picture)) image = info.picture
+      }
+    } catch (err) {
+      console.error("Failed to fetch user info fallback:", err)
+    }
+  }
+
+  const manageMembersUrl = homeId ? `/dashboard/homes/${homeId}/members` : undefined
 
   return (
     <header className="fixed top-4 left-4 right-4 z-50 flex h-16 items-center justify-between rounded-full bg-orange-50/50 px-6 shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),0_10px_30px_rgba(255,126,103,0.1)] backdrop-blur-md">
@@ -28,26 +71,16 @@ export default async function DashboardTopbar() {
             <IconBell size={18} />
             <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
           </button>
-          <Link
-            href="/dashboard/account"
-            className="rounded-full p-1.5 text-stone-400 shadow-[2px_2px_4px_rgba(0,0,0,0.05),-2px_-2px_4px_rgba(255,255,255,0.8)]"
-          >
-            <IconSettings size={18} />
-          </Link>
         </div>
 
-        <Link
-          href="/dashboard/account"
-          className="h-9 w-9 overflow-hidden rounded-full border-2 border-white/50 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.9)]"
-        >
-          {session.user?.image ? (
-            <Image alt="User profile" className="h-full w-full object-cover" src={session.user.image} width={40} height={40} />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-primary-container text-xs font-semibold text-on-primary-container">
-              {session.user?.name?.slice(0, 1).toUpperCase() ?? "U"}
-            </div>
-          )}
-        </Link>
+        <UserMenu
+          name={name}
+          email={email}
+          image={image}
+          accountSettingsUrl="/dashboard/account"
+          manageMembersUrl={manageMembersUrl}
+          signOutAction={federatedLogout}
+        />
       </div>
     </header>
   )

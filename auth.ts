@@ -7,6 +7,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Zitadel({
       clientId: process.env.AUTH_ZITADEL_ID!,
       issuer: process.env.AUTH_ZITADEL_ISSUER!,
+      authorization: {
+        params: {
+          scope: "openid email profile",
+        },
+      },
+      profile(profile) {
+        console.debug("[auth] Zitadel profile:", JSON.stringify(profile, null, 2))
+        const composed = [profile.given_name, profile.family_name]
+          .filter((s): s is string => typeof s === "string" && s.trim().length > 0)
+          .join(" ")
+          .trim()
+        return {
+          id: profile.sub,
+          name:
+            (typeof profile.name === "string" && profile.name.trim()) ||
+            composed ||
+            profile.preferred_username ||
+            profile.email ||
+            null,
+          email: profile.email,
+          image: profile.picture,
+        }
+      },
     }),
   ],
 
@@ -17,19 +40,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 
   callbacks: {
-    async jwt({ token, account }) {
-      // First sign-in: account contains the raw token response from Keycloak
-      if (account) {
-        return {
-          ...token,
-          accessToken: account.access_token!,
-          refreshToken: account.refresh_token!,
-          accessTokenExpires: Date.now() + (account.expires_in ?? 300) * 1000,
-        }
+    async jwt({ token, account, user }) {
+      // First sign-in: account contains the raw token response
+      if (account && user) {
+        token.accessToken = account.access_token!
+        token.idToken = account.id_token
+        token.refreshToken = account.refresh_token!
+        token.accessTokenExpires = Date.now() + (account.expires_in ?? 300) * 1000
+        
+        // Ensure name/email/image are explicitly stored in the token
+        token.name = user.name
+        token.email = user.email
+        token.picture = user.image
       }
 
       // Token still valid
-      if (Date.now() < token.accessTokenExpires) {
+      if (Date.now() < (token.accessTokenExpires as number)) {
         return token
       }
 
@@ -38,9 +64,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
 
     async session({ session, token }) {
-      session.accessToken = token.accessToken
+      session.accessToken = token.accessToken as string
+      session.idToken = token.idToken as string
+      
+      if (session.user) {
+        session.user.name = token.name
+        session.user.email = token.email as string
+        session.user.image = token.picture as string
+      }
+
       if (token.error) {
-        session.error = token.error
+        session.error = token.error as any
       }
       return session
     },

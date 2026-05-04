@@ -1,10 +1,11 @@
-import { auth, signOut } from "@/auth"
+import { auth } from "@/auth"
 import { type CursorResponse, type Home, solCore } from "@/lib/sol-core"
 import { zitadelAccount, type AccountProfile } from "@/lib/zitadel-account"
 import HomeSwitcher from "@/components/HomeSwitcher"
 import UserMenu from "@/components/UserMenu"
 import Link from "next/link"
 import { redirect, unstable_rethrow } from "next/navigation"
+import { federatedLogout } from "@/app/actions"
 
 type PageSearchParams = Promise<{ notice?: string; error?: string; section?: string }>
 
@@ -13,11 +14,6 @@ function errorMessage(e: unknown) {
 }
 
 // ── Server actions ────────────────────────────────────────────────────────────
-
-async function signOutAction() {
-  "use server"
-  await signOut({ redirectTo: "/" })
-}
 
 async function updateProfileAction(formData: FormData) {
   "use server"
@@ -95,7 +91,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Page
             email={session.user?.email}
             image={session.user?.image}
             accountSettingsUrl="/dashboard/account"
-            signOutAction={signOutAction}
+            signOutAction={federatedLogout}
           />
         </div>
       </header>

@@ -14,7 +14,7 @@ export default async function HomeLayout({
   return (
     <WSProvider>
       <div className="bg-background text-on-background selection:bg-primary-container selection:text-on-primary-container min-h-screen antialiased">
-        <DashboardTopbar />
+        <DashboardTopbar homeId={homeId} />
         <div className="flex min-h-screen pt-24">
           <DashboardSidebar homeId={homeId} />
           <main className="relative flex flex-1 flex-col md:ml-[320px] px-4 pb-4">

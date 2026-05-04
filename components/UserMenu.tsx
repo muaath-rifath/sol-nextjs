@@ -9,6 +9,7 @@ interface Props {
   email: string | null | undefined
   image: string | null | undefined
   accountSettingsUrl: string
+  manageMembersUrl?: string
   signOutAction: () => Promise<void>
 }
 
@@ -21,7 +22,7 @@ function initials(name: string | null | undefined): string {
     .join("")
 }
 
-export default function UserMenu({ name, email, image, accountSettingsUrl, signOutAction }: Props) {
+export default function UserMenu({ name, email, image, accountSettingsUrl, manageMembersUrl, signOutAction }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -61,6 +62,14 @@ export default function UserMenu({ name, email, image, accountSettingsUrl, signO
             >
               Account settings
             </button>
+            {manageMembersUrl ? (
+              <button
+                className="flex w-full items-center rounded-xl px-3 py-2 text-sm text-on-surface transition hover:bg-surface"
+                onClick={() => { setOpen(false); router.push(manageMembersUrl) }}
+              >
+                Manage members
+              </button>
+            ) : null}
             <div className="my-1 border-t border-outline-variant/45" />
             <form action={signOutAction}>
               <button

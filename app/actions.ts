@@ -1,6 +1,7 @@
 "use server"
 
 import { solCore, type Home } from "@/lib/sol-core"
+import { auth, signOut } from "@/auth"
 
 export interface CreateRoomInput {
   homeId: string
@@ -33,4 +34,19 @@ export async function getFirmwareBuildStatusAction(buildId: string) {
       build.logs.slice(-100000)
   }
   return build
+}
+
+export async function federatedLogout() {
+  const session = await auth()
+  const issuer = process.env.AUTH_ZITADEL_ISSUER
+  const idToken = session?.idToken
+
+  if (issuer && idToken) {
+    const endSessionUrl = new URL(`${issuer}/oidc/v1/end_session`)
+    endSessionUrl.searchParams.set("id_token_hint", idToken)
+    endSessionUrl.searchParams.set("post_logout_redirect_uri", process.env.AUTH_URL || "http://localhost:3000")
+    await signOut({ redirectTo: endSessionUrl.toString() })
+  } else {
+    await signOut({ redirectTo: "/" })
+  }
 }
