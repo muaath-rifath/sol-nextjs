@@ -1,6 +1,6 @@
 "use client"
 
-import { patchFirmware, buildCertsPartition, type FlashConfig, type FirmwareTemplateId, CONFIG_PARTITION_OFFSET, CONFIG_PARTITION_SIZE } from "@/lib/firmware-patcher"
+import { patchFirmware, buildCertsPartition, RESERVED_GPIO_PINS, type FlashConfig, type FirmwareTemplateId, CONFIG_PARTITION_OFFSET, CONFIG_PARTITION_SIZE, MODEL_PARTITION_OFFSET } from "@/lib/firmware-patcher"
 import { getDeviceProvisioning } from "@/lib/actions"
 import { IconAlertCircle, IconCheck, IconLoader2, IconX } from "@tabler/icons-react"
 import clsx from "clsx"
@@ -24,29 +24,37 @@ type LogEntry = {
   type: "info" | "error" | "success"
 }
 
+type ApplianceOption = {
+  device_id: string
+  channel?: number
+  gpio_pin?: number
+  active_low: boolean
+}
+
+const DEFAULT_RELAY_PINS: [number, number, number, number] = [12, 13, 14, 21]
+
 type Props = {
   firmwareVersions: FirmwareVersion[]
   devices: DeviceOption[]
+  appliances?: ApplianceOption[]
   defaultTemplate?: string
   mqttBrokerUrl: string
-  mqttUsername: string
-  mqttPassword: string
   caCert: string
 }
 
 export default function Flasher({
   firmwareVersions,
   devices,
+  appliances,
   defaultTemplate,
   mqttBrokerUrl,
-  mqttUsername,
-  mqttPassword,
   caCert,
 }: Props) {
   const [deviceID, setDeviceID] = useState<string>(devices[0]?.id ?? "")
   const [selectedFirmwareId, setSelectedFirmwareId] = useState<string>(firmwareVersions[0]?.id ?? "")
   const [wifiSsid, setWifiSsid] = useState("")
   const [wifiPassword, setWifiPassword] = useState("")
+  const [relayPins, setRelayPins] = useState<[number, number, number, number]>([...DEFAULT_RELAY_PINS] as [number, number, number, number])
   const [isBusy, setIsBusy] = useState(false)
   const [status, setStatus] = useState<string>("Ready")
   const [logs, setLogs] = useState<LogEntry[]>([])
@@ -68,6 +76,31 @@ export default function Flasher({
       setSelectedFirmwareId(firmwareVersions[0].id)
     }
   }, [firmwareVersions, selectedFirmwareId])
+
+  useEffect(() => {
+    if (!appliances || !deviceID) {
+      setRelayPins([...DEFAULT_RELAY_PINS] as [number, number, number, number])
+      return
+    }
+    const pins: [number, number, number, number] = [...DEFAULT_RELAY_PINS] as [number, number, number, number]
+    for (const app of appliances) {
+      if (app.device_id === deviceID && app.channel != null && app.channel >= 0 && app.channel < 4 && app.gpio_pin != null) {
+        pins[app.channel] = app.gpio_pin
+      }
+    }
+    setRelayPins(pins)
+  }, [deviceID, appliances])
+
+  const relayActiveLowMask = useMemo(() => {
+    if (!appliances || !deviceID) return 0
+    let mask = 0
+    for (const app of appliances) {
+      if (app.device_id === deviceID && app.channel != null && app.channel >= 0 && app.channel < 4 && app.active_low) {
+        mask |= (1 << app.channel)
+      }
+    }
+    return mask
+  }, [deviceID, appliances])
 
   function firmwareLabel(firmware: FirmwareVersion, index: number) {
     const tags = []
@@ -181,26 +214,48 @@ export default function Flasher({
       setStatus("Downloading firmware...")
       addLog(`Selected firmware: ${selectedFirmware.version} (${selectedFirmware.template_id}, ${selectedFirmware.id})`)
       addLog(`Downloading firmware version ${selectedFirmware.version}...`)
-      const response = await fetch(`/api/firmware/${selectedFirmware.id}`, { cache: "no-store" })
+      const [response, blResponse, ptResponse, modelResponse] = await Promise.all([
+        fetch(`/api/firmware/${selectedFirmware.id}`, { cache: "no-store" }),
+        fetch(`/api/firmware/${selectedFirmware.id}/bootloader`, { cache: "no-store" }),
+        fetch(`/api/firmware/${selectedFirmware.id}/partition-table`, { cache: "no-store" }),
+        fetch(`/api/firmware/${selectedFirmware.id}/model`, { cache: "no-store" }),
+      ])
       if (!response.ok) {
         throw new Error(`Download failed: ${response.status}`)
       }
       const arrayBuffer = await response.arrayBuffer()
       const bytes = new Uint8Array(arrayBuffer)
-
-      let certBundle: { CertificatePEM: string; PrivateKeyPEM: string } | null = null
-      try {
-        addLog("Generating device mTLS certificates...")
-        certBundle = await getDeviceProvisioning(deviceID)
-        if (certBundle) {
-          addLog("Certificates generated successfully.")
-        } else {
-          addLog("mTLS is disabled on the server, skipping certificate generation.")
-        }
-      } catch (e) {
-        addLog(`Certificate generation failed: ${e instanceof Error ? e.message : "Unknown error"}`)
-        throw e
+      let bootloaderBinary: Uint8Array | null = null
+      if (blResponse.ok) {
+        bootloaderBinary = new Uint8Array(await blResponse.arrayBuffer())
+        addLog(`Bootloader downloaded (${bootloaderBinary.byteLength} bytes)`)
+      } else {
+        addLog("Warning: bootloader not available — device bootloader will not be updated", "error")
       }
+      let partitionTable: Uint8Array | null = null
+      if (ptResponse.ok) {
+        partitionTable = new Uint8Array(await ptResponse.arrayBuffer())
+        addLog(`Partition table downloaded (${partitionTable.byteLength} bytes)`)
+      } else {
+        addLog("Warning: partition table not available — certs partition may not be found on device", "error")
+      }
+      addLog("Downloading wake word model binary...")
+      let modelBinary: Uint8Array | null = null
+      if (modelResponse.ok) {
+        modelBinary = new Uint8Array(await modelResponse.arrayBuffer())
+        addLog(`Model binary downloaded (${modelBinary.byteLength} bytes)`)
+      } else {
+        addLog("No model binary for this firmware version — skipping model partition")
+      }
+
+      addLog("Generating device mTLS certificates...")
+      const certBundle = await getDeviceProvisioning(deviceID).catch((e) => {
+        throw new Error(`Certificate generation failed: ${e instanceof Error ? e.message : String(e)}`)
+      })
+      if (!certBundle) {
+        throw new Error("mTLS provisioning is disabled on the server — cannot flash without certificates. Enable it in sol-core configuration.")
+      }
+      addLog("Certificates generated successfully.")
 
       setStatus("Patching firmware...")
       addLog("Patching SOLCFGv2 fields...")
@@ -208,18 +263,16 @@ export default function Flasher({
         wifiSsid,
         wifiPassword,
         mqttBrokerUri: mqttBrokerUrl,
-        mqttUsername: mqttUsername,
-        mqttPassword: mqttPassword,
         deviceId: deviceID,
         templateId: (selectedFirmware.template_id || defaultTemplate || "switch") as FirmwareTemplateId,
-        relayPins: [12, 13, 14, 15],
-        relayActiveLowMask: 0,
-        mtls: certBundle ? {
-          caCert: caCert, // We need to get the Root CA cert to the frontend
+        relayPins: relayPins,
+        relayActiveLowMask: relayActiveLowMask,
+        mtls: {
+          caCert,
           clientCert: certBundle.CertificatePEM,
           clientKey: certBundle.PrivateKeyPEM,
-        } : undefined,
-      } as FlashConfig)
+        },
+      })
 
       // Build certs partition binary (64KB at 0x610000)
       let certsPartition: Uint8Array | null = null
@@ -262,12 +315,18 @@ export default function Flasher({
       addLog("Chip connected. Writing flash...")
       await loader.writeFlash({
         fileArray: [
+          // Bootloader at 0x0000 — must match the IDF version the app was built with
+          ...(bootloaderBinary ? [{ address: 0x0000, data: bootloaderBinary }] : []),
+          // Partition table at 0x8000 — required for firmware to locate the certs partition
+          ...(partitionTable ? [{ address: 0x8000, data: partitionTable }] : []),
           {
             address: 0x10000,
             data: patched,
           },
           // Write the certs partition to 0x610000 (matches partitions.csv)
           ...(certsPartition ? [{ address: 0x610000, data: certsPartition }] : []),
+          // Write WakeNet model partition at 0x630000 (matches partitions.csv "model" entry)
+          ...(modelBinary ? [{ address: MODEL_PARTITION_OFFSET, data: modelBinary }] : []),
           // Reset OTA data to force boot from ota_0
           {
             address: 0xe000,
@@ -346,6 +405,49 @@ export default function Flasher({
           <input type="password" value={wifiPassword} onChange={(e) => setWifiPassword(e.target.value)} className="clay-inset mt-1 w-full rounded-xl border border-white/55 px-3 py-2 text-sm text-on-surface" />
         </label>
 
+        <div className="col-span-full space-y-1.5">
+          <p className="text-xs font-semibold text-on-surface-variant">Relay Channel GPIO Pins</p>
+          <div className="grid grid-cols-4 gap-2">
+            {([0, 1, 2, 3] as const).map((ch) => {
+              const pin = relayPins[ch]
+              const isReserved = RESERVED_GPIO_PINS.has(pin)
+              return (
+                <div key={ch} className="space-y-0.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-outline">Ch {ch}</p>
+                  <input
+                    type="number"
+                    value={pin}
+                    min={0}
+                    max={48}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10)
+                      if (!isNaN(v)) {
+                        setRelayPins((prev) => {
+                          const next = [...prev] as [number, number, number, number]
+                          next[ch] = v
+                          return next
+                        })
+                      }
+                    }}
+                    className={`clay-inset w-full rounded-xl border px-2 py-1.5 text-sm text-on-surface ${
+                      isReserved ? "border-error bg-error-container/10" : "border-white/55"
+                    }`}
+                  />
+                  {isReserved && (
+                    <p className="text-[9px] font-semibold text-error">I2S audio pin!</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          {relayActiveLowMask !== 0 && (
+            <p className="text-[10px] text-on-surface-variant">
+              Active-low mask: <span className="font-mono text-primary">0x{relayActiveLowMask.toString(16).padStart(2, "0")}</span>
+              {" "}(from appliance config)
+            </p>
+          )}
+        </div>
+
         <div className="flex items-end">
           <p className="text-xs text-on-surface-variant">
             MQTT broker: <span className="font-mono text-primary">{mqttBrokerUrl}</span>
@@ -394,7 +496,7 @@ export default function Flasher({
               </button>
             </div>
             <div className="p-6">
-              <div className="clay-inset relative h-96 overflow-hidden rounded-2xl border border-white/55 bg-stone-950 font-mono text-xs text-stone-100">
+              <div className="relative h-96 overflow-hidden rounded-2xl border border-white/55 bg-stone-950 font-mono text-xs text-stone-100">
                 <div className="absolute inset-0 overflow-y-auto p-4">
                   {logs.map((log, i) => (
                     <div key={i} className={clsx("mb-1", {
