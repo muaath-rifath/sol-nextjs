@@ -1,7 +1,21 @@
 "use server"
 
 import { solCore } from "@/lib/sol-core"
+import type { CursorResponse, ActivityLog } from "@/lib/sol-core"
 import { revalidatePath } from "next/cache"
+
+export async function listActivityAction(
+  homeId: string,
+  roomId: string,
+  cursor?: string,
+  limit: number = 20,
+): Promise<CursorResponse<ActivityLog>> {
+  try {
+    return await solCore.rooms.activity(homeId, roomId, { cursor, limit })
+  } catch {
+    return { data: [], has_more: false, next_cursor: null }
+  }
+}
 
 export async function getDeviceProvisioning(deviceId: string) {
   try {

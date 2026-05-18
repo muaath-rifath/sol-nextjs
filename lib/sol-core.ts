@@ -2,6 +2,21 @@
 
 const SOL_CORE_URL = process.env.SOL_CORE_URL!
 
+async function fetchWithRetry(url: string, init: RequestInit, retries = 3): Promise<Response> {
+  let lastError: unknown
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fetch(url, init)
+    } catch (err) {
+      lastError = err
+      if (attempt < retries - 1) {
+        await new Promise((res) => setTimeout(res, 100 * 2 ** attempt))
+      }
+    }
+  }
+  throw lastError
+}
+
 function buildQuery(params: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
@@ -58,7 +73,7 @@ async function solFetch(path: string, init: RequestInit = {}): Promise<Response>
     headers.set("Authorization", `Bearer ${session.accessToken}`)
   }
 
-  const response = await fetch(`${SOL_CORE_URL}${path}`, {
+  const response = await fetchWithRetry(`${SOL_CORE_URL}${path}`, {
     ...init,
     cache: "no-store",
     headers,
@@ -76,7 +91,7 @@ async function solPublicFetch(path: string, init: RequestInit = {}): Promise<Res
     headers.set("Content-Type", "application/json")
   }
 
-  const response = await fetch(`${SOL_CORE_URL}${path}`, {
+  const response = await fetchWithRetry(`${SOL_CORE_URL}${path}`, {
     ...init,
     cache: "no-store",
     headers,
@@ -189,6 +204,7 @@ export interface Room {
   home_id: string
   name: string
   floor?: number
+  can_manage: boolean
   metadata?: Record<string, unknown>
   created_at: string
   updated_at: string
@@ -219,6 +235,44 @@ export interface Appliance {
   state: Record<string, unknown>
   created_at: string
   updated_at: string
+}
+
+export type PermissionScopeType = "room" | "device" | "appliance"
+
+export interface PermissionScopeRef {
+  type: PermissionScopeType
+  id: string
+}
+
+export interface PermissionTreeAppliance {
+  id: string
+  name: string
+  type: string
+  channel?: number
+  granted_directly: boolean
+}
+
+export interface PermissionTreeDevice {
+  id: string
+  name: string
+  granted_directly: boolean
+  appliances: PermissionTreeAppliance[]
+}
+
+export interface PermissionTreeRoom {
+  id: string
+  name: string
+  granted_directly: boolean
+  can_manage_devices: boolean
+  devices: PermissionTreeDevice[]
+}
+
+export interface PermissionTree {
+  home_id: string
+  user_id: string
+  role: MemberRole
+  all_access: boolean
+  rooms: PermissionTreeRoom[]
 }
 
 export interface FirmwareVersion {
@@ -347,6 +401,17 @@ export const solCore = {
         method: "PATCH",
         body: JSON.stringify({ role }),
       }).then((r) => jsonOrNull(r)),
+    permissions: {
+      get: (homeID: string, userID: string) =>
+        solFetch(`/api/v1/homes/${homeID}/members/${userID}/permissions`).then((r) =>
+          safeJson<PermissionTree>(r, {} as PermissionTree),
+        ),
+      set: (homeID: string, userID: string, grants: PermissionScopeRef[], manageRooms: string[] = []) =>
+        solFetch(`/api/v1/homes/${homeID}/members/${userID}/permissions`, {
+          method: "PUT",
+          body: JSON.stringify({ grants, manage_rooms: manageRooms }),
+        }).then((r) => jsonOrNull(r)),
+    },
   },
 
   invitations: {
@@ -421,9 +486,11 @@ export const solCore = {
       solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}`, { method: "DELETE" }).then((r) =>
         jsonOrNull(r),
       ),
-    activity: (homeID: string, roomID: string, limit: number = 20) =>
-      solFetch(`/api/v1/homes/${homeID}/rooms/${roomID}/activity?limit=${limit}`).then((r) =>
-        safeJson<{ data: ActivityLog[] }>(r, { data: [] }),
+    activity: (homeID: string, roomID: string, params?: { cursor?: string; limit?: number }) =>
+      solFetch(
+        `/api/v1/homes/${homeID}/rooms/${roomID}/activity${buildQuery(params ?? {})}`,
+      ).then(async (r) =>
+        normalizeCursorResponse<ActivityLog>(await safeJson<RawCursorResponse<ActivityLog>>(r, {})),
       ),
     devices: {
       list: (homeID: string, roomID: string, params?: { cursor?: string; limit?: number }) =>

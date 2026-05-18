@@ -5,7 +5,9 @@ import {
   IconBolt,
   IconCloudDownload,
   IconCpu,
+  IconPower,
   IconTool,
+  IconTrash,
   IconUsb,
   IconWifi,
   IconWifiOff,
@@ -67,14 +69,18 @@ export default async function RoomDetailPage({
   }
   const room = roomResult
 
-  const [devices, firmwareVersions, activityRes, appliancesRes, otaAttemptsRes] = await Promise.all([
+  const [devices, firmwareVersions, activityRes, appliancesRes, otaAttemptsRes, home] = await Promise.all([
     solCore.rooms.devices.listAll(homeId, roomId).catch(() => []),
     solCore.firmware.list().catch(() => []),
-    solCore.rooms.activity(homeId, roomId, 20).catch(() => ({ data: [] })),
+    solCore.rooms.activity(homeId, roomId, { limit: 10 }).catch(() => ({ data: [], has_more: false, next_cursor: null })),
     solCore.appliances.listByRoom(homeId, roomId).catch(() => ({ data: [] })),
     solCore.rooms.otaAttempts.list(homeId, roomId, 50).catch(() => ({ data: [] })),
+    solCore.homes.get(homeId).catch(() => null),
   ])
+  const isAdmin = home?.my_role === "owner" || home?.my_role === "admin"
+  const canManage = room.can_manage || isAdmin
   const activityLogs = activityRes?.data || []
+  const activityHasMore = activityRes?.has_more ?? false
   const appliances = appliancesRes?.data || []
   const otaAttempts = otaAttemptsRes?.data || []
 
@@ -167,13 +173,21 @@ export default async function RoomDetailPage({
     "use server"
     const applianceID = String(formData.get("appliance_id") ?? "").trim()
     const name = String(formData.get("name") ?? "").trim()
+    const gpioPinStr = String(formData.get("gpio_pin") ?? "").trim()
+    const channelStr = String(formData.get("channel") ?? "").trim()
+    const activeLow = formData.get("active_low") === "true"
 
     if (!applianceID || !name) {
       redirect(roomHref(homeId, roomId, { error: "Missing appliance update data" }))
     }
 
     try {
-      await solCore.appliances.update(applianceID, { name })
+      await solCore.appliances.update(applianceID, {
+        name,
+        gpio_pin: gpioPinStr ? parseInt(gpioPinStr, 10) : undefined,
+        channel: channelStr ? parseInt(channelStr, 10) : undefined,
+        active_low: activeLow,
+      })
       redirect(roomHref(homeId, roomId, { notice: "Appliance updated" }))
     } catch (error) {
       unstable_rethrow(error)
@@ -192,6 +206,17 @@ export default async function RoomDetailPage({
     try {
       await solCore.appliances.delete(applianceID)
       redirect(roomHref(homeId, roomId, { notice: "Appliance deleted" }))
+    } catch (error) {
+      unstable_rethrow(error)
+      redirect(roomHref(homeId, roomId, { error: errorMessage(error) }))
+    }
+  }
+
+  async function deleteRoomAction() {
+    "use server"
+    try {
+      await solCore.rooms.delete(homeId, roomId)
+      redirect(`/dashboard/homes/${homeId}?notice=Room+deleted`)
     } catch (error) {
       unstable_rethrow(error)
       redirect(roomHref(homeId, roomId, { error: errorMessage(error) }))
@@ -242,13 +267,26 @@ export default async function RoomDetailPage({
                 <IconArrowLeft size={16} />
                 Back to home
               </Link>
-              <Link
-                href={`/dashboard/homes/${homeId}/rooms/${roomId}/flash`}
-                className="btn-primary inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
-              >
-                <IconUsb size={16} />
-                Flash via USB
-              </Link>
+              {isAdmin && (
+                <>
+                  <Link
+                    href={`/dashboard/homes/${homeId}/rooms/${roomId}/flash`}
+                    className="btn-primary inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
+                  >
+                    <IconUsb size={16} />
+                    Flash via USB
+                  </Link>
+                  <form action={deleteRoomAction}>
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-2 rounded-full border border-error/50 bg-surface px-4 py-2 text-sm font-medium text-error transition hover:bg-error-container"
+                    >
+                      <IconTrash size={16} />
+                      Delete room
+                    </button>
+                  </form>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -309,18 +347,22 @@ export default async function RoomDetailPage({
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container-high shadow-sm">
                     <IconCpu size={16} className="text-primary" />
                   </div>
-                  <CreateDevicePopover createDeviceAction={createDeviceAction} />
+                  {canManage && (
+                    <CreateDevicePopover createDeviceAction={createDeviceAction} />
+                  )}
                 </div>
               </div>
 
               <RoomDeviceList
                 homeId={homeId}
                 roomId={roomId}
+                canManage={canManage}
                 initialDevices={devices}
                 initialAppliances={appliances}
                 addApplianceAction={addApplianceAction}
                 deleteDeviceAction={deleteDeviceAction}
                 deleteApplianceAction={deleteApplianceAction}
+                updateApplianceAction={updateApplianceAction}
               />
 
               <div className="relative z-10 mt-8 border-t border-outline-variant/35 pt-6">
@@ -330,7 +372,7 @@ export default async function RoomDetailPage({
                 </h3>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {primaryDevice ? (
+                  {primaryDevice && isAdmin ? (
                     <form action={otaAction} className="contents">
                       <input type="hidden" name="device_id" value={primaryOnlineDevice?.id ?? ""} />
                       <input
@@ -354,24 +396,30 @@ export default async function RoomDetailPage({
                         </span>
                       </button>
                     </form>
+                  ) : primaryDevice ? (
+                    <div className="rounded-xl border border-outline-variant/40 bg-surface p-4 text-sm text-on-surface-variant">
+                      OTA and maintenance actions are restricted to administrators.
+                    </div>
                   ) : (
                     <div className="rounded-xl border border-outline-variant/40 bg-surface p-4 text-sm text-on-surface-variant">
                       Add a device to use OTA actions.
                     </div>
                   )}
 
-                  <Link
-                    href={`/dashboard/homes/${homeId}/rooms/${roomId}/flash`}
-                    className="flex items-center gap-3 rounded-xl border border-outline-variant/40 bg-surface p-4 text-primary shadow-[4px_4px_12px_rgba(87,66,62,0.06),-4px_-4px_12px_rgba(255,255,255,0.8)]"
-                  >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-high shadow-[inset_2px_2px_4px_rgba(87,66,62,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.8)]">
-                      <IconUsb size={20} />
-                    </span>
-                    <span className="text-left">
-                      <span className="block text-base font-semibold text-on-surface">Flash via USB</span>
-                      <span className="block text-xs text-outline">Local WebSerial connection</span>
-                    </span>
-                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href={`/dashboard/homes/${homeId}/rooms/${roomId}/flash`}
+                      className="flex items-center gap-3 rounded-xl border border-outline-variant/40 bg-surface p-4 text-primary shadow-[4px_4px_12px_rgba(87,66,62,0.06),-4px_-4px_12px_rgba(255,255,255,0.8)]"
+                    >
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-high shadow-[inset_2px_2px_4px_rgba(87,66,62,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.8)]">
+                        <IconUsb size={20} />
+                      </span>
+                      <span className="text-left">
+                        <span className="block text-base font-semibold text-on-surface">Flash via USB</span>
+                        <span className="block text-xs text-outline">Local WebSerial connection</span>
+                      </span>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -408,8 +456,8 @@ export default async function RoomDetailPage({
               <p className="text-sm text-outline px-2">No recent activity.</p>
             ) : activityLogs.map((log, index) => (
               <div key={index} className="flex w-full items-center gap-3 overflow-hidden rounded-xl border border-white/40 bg-surface p-3 shadow-[inset_2px_2px_6px_rgba(87,66,62,0.03),inset_-2px_-2px_6px_rgba(255,255,255,0.9)]">
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-container-high ${log.badge_text === "Success" || log.badge_text === "Online" ? "text-tertiary" : "text-error"}`}>
-                  {log.badge_text === "Success" || log.badge_text === "Online" ? <IconCloudDownload size={17} /> : <IconWifiOff size={17} />}
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-container-high ${log.badge_text === "Success" || log.badge_text === "Online" || log.badge_text === "On" ? "text-tertiary" : log.badge_text === "Off" ? "text-outline" : "text-error"}`}>
+                  {log.badge_text === "Success" || log.badge_text === "Online" ? <IconCloudDownload size={17} /> : log.badge_text === "On" ? <IconBolt size={17} /> : log.badge_text === "Off" ? <IconPower size={17} /> : <IconWifiOff size={17} />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-on-surface">{log.title}</p>
@@ -421,6 +469,16 @@ export default async function RoomDetailPage({
               </div>
             ))}
           </div>
+          {activityHasMore && (
+            <div className="mt-4 border-t border-outline-variant/20 pt-3">
+              <Link
+                href={`/dashboard/homes/${homeId}/rooms/${roomId}/activity`}
+                className="block w-full rounded-xl border border-white/40 bg-surface px-4 py-2.5 text-center text-sm font-medium text-primary shadow-[inset_2px_2px_6px_rgba(87,66,62,0.03),inset_-2px_-2px_6px_rgba(255,255,255,0.9)] hover:bg-surface-container-low transition-colors"
+              >
+                View full activity log
+              </Link>
+            </div>
+          )}
         </section>
 
         <OTALogPanel
