@@ -72,7 +72,7 @@ export default async function RoomDetailPage({
   const [devices, firmwareVersions, activityRes, appliancesRes, otaAttemptsRes, home] = await Promise.all([
     solCore.rooms.devices.listAll(homeId, roomId).catch(() => []),
     solCore.firmware.list().catch(() => []),
-    solCore.rooms.activity(homeId, roomId, { limit: 10 }).catch(() => ({ data: [], has_more: false, next_cursor: null })),
+    solCore.rooms.activity(homeId, roomId, { limit: 5 }).catch(() => ({ data: [], has_more: false, next_cursor: null })),
     solCore.appliances.listByRoom(homeId, roomId).catch(() => ({ data: [] })),
     solCore.rooms.otaAttempts.list(homeId, roomId, 50).catch(() => ({ data: [] })),
     solCore.homes.get(homeId).catch(() => null),
@@ -80,7 +80,6 @@ export default async function RoomDetailPage({
   const isAdmin = home?.my_role === "owner" || home?.my_role === "admin"
   const canManage = room.can_manage || isAdmin
   const activityLogs = activityRes?.data || []
-  const activityHasMore = activityRes?.has_more ?? false
   const appliances = appliancesRes?.data || []
   const otaAttempts = otaAttemptsRes?.data || []
 
@@ -469,7 +468,7 @@ export default async function RoomDetailPage({
               </div>
             ))}
           </div>
-          {activityHasMore && (
+          {activityLogs.length > 0 && (
             <div className="mt-4 border-t border-outline-variant/20 pt-3">
               <Link
                 href={`/dashboard/homes/${homeId}/rooms/${roomId}/activity`}
