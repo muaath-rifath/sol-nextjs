@@ -184,7 +184,7 @@ export default function FirmwareBuildModal({ templateId, homeId }: { templateId?
                   )}
                 </div>
 
-                <div className="clay-inset relative h-64 overflow-hidden rounded-2xl border border-white/55 bg-stone-950 font-mono text-xs text-stone-100">
+                <div className="relative h-64 overflow-hidden rounded-2xl border border-white/55 bg-stone-950 font-mono text-xs text-stone-100">
                   <div className="absolute inset-0 overflow-y-auto p-4">
                     <pre className="whitespace-pre-wrap">{buildStatus.logs}</pre>
                     <div ref={logEndRef} />

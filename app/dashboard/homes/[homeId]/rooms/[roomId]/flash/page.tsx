@@ -18,10 +18,12 @@ export default async function FlashPage({
   }
   const room = roomResult
 
-  const [devices, firmwareVersions] = await Promise.all([
+  const [devices, firmwareVersions, appliancesRes] = await Promise.all([
     solCore.rooms.devices.listAll(homeId, roomId).catch(() => []),
     solCore.firmware.list().catch(() => []),
+    solCore.appliances.listByRoom(homeId, roomId).catch(() => ({ data: [] })),
   ])
+  const appliances = appliancesRes?.data ?? []
 
   const flashDevices = devices.map((d) => ({ id: d.id, name: d.name, room_id: d.room_id, metadata: d.metadata }))
   const flashFirmware = firmwareVersions.map((f) => ({
@@ -40,7 +42,7 @@ export default async function FlashPage({
               <h1 className="font-display mt-2 text-3xl font-semibold tracking-tight text-on-surface">{room.name}</h1>
             </div>
             <div className="flex items-center gap-2">
-               <FirmwareBuildModal templateId="universal" homeId={homeId} />
+               <FirmwareBuildModal templateId="switch" homeId={homeId} />
             </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -62,9 +64,8 @@ export default async function FlashPage({
         <Flasher
           firmwareVersions={flashFirmware}
           devices={flashDevices}
+          appliances={appliances}
           mqttBrokerUrl={process.env.NEXT_PUBLIC_MQTT_BROKER_URL ?? "mqtts://mqtt.sol.muaathrifath.me:8883"}
-          mqttUsername={process.env.NEXT_PUBLIC_MQTT_USERNAME ?? ""}
-          mqttPassword={process.env.NEXT_PUBLIC_MQTT_PASSWORD ?? ""}
           caCert={(process.env.NEXT_PUBLIC_MQTT_CA_CERT ?? "").replace(/\\n/g, "\n")}
         />
       </div>

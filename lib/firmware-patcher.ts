@@ -4,13 +4,11 @@ export interface FlashConfig {
   wifiSsid: string
   wifiPassword: string
   mqttBrokerUri: string
-  mqttUsername: string
-  mqttPassword: string
   deviceId: string
   templateId: FirmwareTemplateId
   relayPins: [number, number, number, number]
   relayActiveLowMask: number
-  mtls?: {
+  mtls: {
     caCert: string
     clientCert: string
     clientKey: string
@@ -98,9 +96,14 @@ export const CERT_OFFSETS = {
   clientKey: 0x2000,
 } as const
 
+// I2S audio pins: MAX98357A speaker (4=BCLK, 5=LRC, 6=DOUT) and INMP441 mic (15=WS, 16=SCK, 17=SD).
+// Driving these as GPIO outputs will damage connected audio hardware.
+export const RESERVED_GPIO_PINS = new Set([4, 5, 6, 15, 16, 17])
+
 // Matches partitions.csv: config, data, nvs, 0x620000, 0x6000
 export const CONFIG_PARTITION_OFFSET = 0x620000
 export const CONFIG_PARTITION_SIZE = 0x6000
+export const MODEL_PARTITION_OFFSET = 0x630000
 
 function readUInt32LE(bytes: Uint8Array, offset: number): number {
   return (
@@ -285,8 +288,9 @@ export async function patchFirmware(bytes: Uint8Array, config: FlashConfig): Pro
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.wifiSsid, SLOT_MAP.wifiSsid.fieldSize, SLOT_MAP.wifiSsid.label, SLOT_MAP.wifiSsid.maxLength, config.wifiSsid, encoder)
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.wifiPassword, SLOT_MAP.wifiPassword.fieldSize, SLOT_MAP.wifiPassword.label, SLOT_MAP.wifiPassword.maxLength, config.wifiPassword, encoder)
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.mqttBrokerUri, SLOT_MAP.mqttBrokerUri.fieldSize, SLOT_MAP.mqttBrokerUri.label, SLOT_MAP.mqttBrokerUri.maxLength, config.mqttBrokerUri, encoder)
-  writeStringField(bytes, blobOffset, FIELD_OFFSETS.mqttUsername, SLOT_MAP.mqttUsername.fieldSize, SLOT_MAP.mqttUsername.label, SLOT_MAP.mqttUsername.maxLength, config.mqttUsername, encoder)
-  writeStringField(bytes, blobOffset, FIELD_OFFSETS.mqttPassword, SLOT_MAP.mqttPassword.fieldSize, SLOT_MAP.mqttPassword.label, SLOT_MAP.mqttPassword.maxLength, config.mqttPassword, encoder)
+  // Auth is always mTLS via the certs partition — these slots are zeroed and never read.
+  bytes.fill(0, blobOffset + FIELD_OFFSETS.mqttUsername, blobOffset + FIELD_OFFSETS.mqttUsername + SLOT_MAP.mqttUsername.fieldSize)
+  bytes.fill(0, blobOffset + FIELD_OFFSETS.mqttPassword, blobOffset + FIELD_OFFSETS.mqttPassword + SLOT_MAP.mqttPassword.fieldSize)
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.deviceId, SLOT_MAP.deviceId.fieldSize, SLOT_MAP.deviceId.label, SLOT_MAP.deviceId.maxLength, config.deviceId, encoder)
   writeStringField(bytes, blobOffset, FIELD_OFFSETS.templateId, SLOT_MAP.templateId.fieldSize, SLOT_MAP.templateId.label, SLOT_MAP.templateId.maxLength, config.templateId, encoder)
 
@@ -297,6 +301,9 @@ export async function patchFirmware(bytes: Uint8Array, config: FlashConfig): Pro
     const pin = Number(config.relayPins[i])
     if (!Number.isInteger(pin) || pin < 0 || pin > 255) {
       throw new Error(`Relay pin at channel ${i + 1} must be an integer between 0 and 255.`)
+    }
+    if (RESERVED_GPIO_PINS.has(pin)) {
+      throw new Error(`Relay channel ${i} GPIO ${pin} is reserved for I2S audio (MAX98357A/INMP441) — flashing this pin could damage hardware.`)
     }
     bytes[blobOffset + FIELD_OFFSETS.relayPins + i] = pin
   }

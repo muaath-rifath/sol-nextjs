@@ -47,7 +47,6 @@ export default async function HomePage({
             <form
               action={async () => {
                 "use server"
-                const { callbackUrl } = await searchParams
                 await signIn("zitadel", { redirectTo: callbackUrl ?? "/dashboard" })
               }}
               className="mt-8"

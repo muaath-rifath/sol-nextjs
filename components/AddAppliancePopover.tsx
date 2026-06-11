@@ -4,19 +4,29 @@ import { useEffect, useState } from "react"
 import { IconPlus, IconTool, IconX } from "@tabler/icons-react"
 
 import Portal from "./ui/portal"
+import { RESERVED_GPIO_PINS } from "@/lib/firmware-patcher"
 
 interface DeviceOption {
   id: string
   name: string
 }
 
+interface ExistingAppliance {
+  channel?: number
+}
+
 interface Props {
   addApplianceAction: (formData: FormData) => Promise<void>
   device: DeviceOption
+  existingAppliances?: ExistingAppliance[]
 }
 
-export default function AddAppliancePopover({ addApplianceAction, device }: Props) {
+export default function AddAppliancePopover({ addApplianceAction, device, existingAppliances = [] }: Props) {
   const [open, setOpen] = useState(false)
+  const [gpioPin, setGpioPin] = useState("")
+  const usedChannels = new Set(existingAppliances.map((a) => a.channel).filter((c): c is number => c != null))
+  const gpioPinNum = gpioPin === "" ? NaN : Number(gpioPin)
+  const isGpioReserved = !isNaN(gpioPinNum) && RESERVED_GPIO_PINS.has(gpioPinNum)
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -26,6 +36,8 @@ export default function AddAppliancePopover({ addApplianceAction, device }: Prop
     }
     if (open) {
       document.addEventListener("keydown", onKeyDown)
+    } else {
+      setGpioPin("")
     }
     return () => document.removeEventListener("keydown", onKeyDown)
   }, [open])
@@ -85,19 +97,33 @@ export default function AddAppliancePopover({ addApplianceAction, device }: Prop
               </select>
 
               <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="number"
+                <select
                   name="channel"
                   required
-                  placeholder="Channel (0-3)"
-                  className="clay-inset w-full rounded-xl border border-white/55 px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/70"
-                />
-                <input
-                  type="number"
-                  name="gpio_pin"
-                  placeholder="GPIO Pin (opt)"
-                  className="clay-inset w-full rounded-xl border border-white/55 px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/70"
-                />
+                  className="clay-inset w-full rounded-xl border border-white/55 px-3 py-2.5 text-sm text-on-surface"
+                >
+                  <option value="">Channel...</option>
+                  {[0, 1, 2, 3].map((ch) => (
+                    <option key={ch} value={ch} disabled={usedChannels.has(ch)}>
+                      Ch {ch}{usedChannels.has(ch) ? " (in use)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <div className="space-y-0.5">
+                  <input
+                    type="number"
+                    name="gpio_pin"
+                    placeholder="GPIO Pin (opt)"
+                    value={gpioPin}
+                    onChange={(e) => setGpioPin(e.target.value)}
+                    className={`clay-inset w-full rounded-xl border px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/70 ${
+                      isGpioReserved ? "border-error bg-error-container/10" : "border-white/55"
+                    }`}
+                  />
+                  {isGpioReserved && (
+                    <p className="text-[9px] font-semibold text-error">GPIO {gpioPin} is an I2S audio pin — don&apos;t use</p>
+                  )}
+                </div>
               </div>
 
               <label className="flex items-center gap-2 px-2 pb-1 text-sm text-on-surface-variant">

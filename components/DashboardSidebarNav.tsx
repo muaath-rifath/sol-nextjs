@@ -56,7 +56,8 @@ export default function DashboardSidebarNav({ homeId, navRooms }: DashboardSideb
         </Link>
       </li>
 
-      {navRooms.length === 0 ? (
+
+{navRooms.length === 0 ? (
         <li>
           <span className="m-2 flex items-center rounded-[24px] p-4 text-stone-400">No rooms yet</span>
         </li>

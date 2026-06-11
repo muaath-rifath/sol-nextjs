@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { IconCpu, IconX } from "@tabler/icons-react"
+import { IconCpu, IconPencil, IconX } from "@tabler/icons-react"
 import { type Appliance, type RoomDevice } from "@/lib/sol-core"
 import AddAppliancePopover from "@/components/AddAppliancePopover"
 import { useWS } from "@/providers/WSProvider"
@@ -16,11 +16,13 @@ function coerceBool(value: unknown): boolean {
 interface Props {
   homeId: string
   roomId: string
+  canManage: boolean
   initialDevices: RoomDevice[]
   initialAppliances: Appliance[]
   addApplianceAction: (formData: FormData) => Promise<void>
   deleteDeviceAction: (formData: FormData) => Promise<void>
   deleteApplianceAction: (formData: FormData) => Promise<void>
+  updateApplianceAction?: (formData: FormData) => Promise<void>
 }
 
 interface DeviceStateEvent {
@@ -36,11 +38,13 @@ interface ApplianceStateEvent {
 export default function RoomDeviceList({
   homeId,
   roomId,
+  canManage,
   initialDevices,
   initialAppliances,
   addApplianceAction,
   deleteDeviceAction,
   deleteApplianceAction,
+  updateApplianceAction,
 }: Props) {
   const { subscribe, send } = useWS()
   const [devices, setDevices] = useState<RoomDevice[]>(initialDevices)
@@ -49,6 +53,7 @@ export default function RoomDeviceList({
   const pendingRef = useRef<Map<string, boolean>>(new Map())
   // Maps correlationId → {applianceId, previousIsOn} for rollback on failure
   const pendingCommandsRef = useRef<Map<string, { applianceId: string; previousIsOn: boolean }>>(new Map())
+  const [editingApplianceId, setEditingApplianceId] = useState<string | null>(null)
 
   useEffect(() => {
     const unsubDevice = subscribe("device.state", (raw) => {
@@ -172,20 +177,25 @@ export default function RoomDeviceList({
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <AddAppliancePopover
-                    addApplianceAction={addApplianceAction}
-                    device={{ id: device.id, name: device.name }}
-                  />
-                  <form action={deleteDeviceAction}>
-                    <input type="hidden" name="device_id" value={device.id ?? ""} />
-                    <button
-                      type="submit"
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-error-container/10 text-error opacity-0 transition-opacity group-hover:opacity-100 hover:bg-error-container/20"
-                      title="Delete Device"
-                    >
-                      <IconX size={14} />
-                    </button>
-                  </form>
+                  {canManage && (
+                    <>
+                      <AddAppliancePopover
+                        addApplianceAction={addApplianceAction}
+                        device={{ id: device.id, name: device.name }}
+                        existingAppliances={deviceAppliances}
+                      />
+                      <form action={deleteDeviceAction}>
+                        <input type="hidden" name="device_id" value={device.id ?? ""} />
+                        <button
+                          type="submit"
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-error-container/10 text-error opacity-0 transition-opacity group-hover:opacity-100 hover:bg-error-container/20"
+                          title="Delete Device"
+                        >
+                          <IconX size={14} />
+                        </button>
+                      </form>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -209,65 +219,114 @@ export default function RoomDeviceList({
               </div>
             </div>
 
-            <div className="mt-auto space-y-1 bg-surface-container/40 p-3">
+            <div className="mt-auto space-y-1.5 bg-surface-container/40 px-3 pb-3 pt-2">
               {deviceAppliances.length === 0 ? (
-                <div className="py-2 text-center">
+                <div className="py-3 text-center">
                   <p className="text-[10px] italic text-outline">No appliances configured</p>
                 </div>
               ) : (
                 deviceAppliances.map((app) => {
                   const isOn = coerceBool(app.state?.isOn)
+                  const isEditing = editingApplianceId === app.id
                   return (
-                    <div
-                      key={app.id}
-                      className="group/item mr-auto inline-flex max-w-[250px] items-center justify-between rounded-xl border border-white/40 bg-white/30 p-2.5 shadow-[inset_1px_1px_2px_rgba(255,255,255,0.8),2px_2px_4px_rgba(0,0,0,0.02)] transition-colors hover:bg-white/50"
-                    >
-                      <div className="min-w-0 w-[140px] max-w-[140px] pr-2">
-                        <div className="flex items-center gap-1.5">
-                          <div
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              isOn
-                                ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"
-                                : "bg-stone-500"
-                            }`}
-                          />
-                          <p className="truncate text-xs font-medium text-on-surface leading-tight">
+                    <div key={app.id} className="space-y-1">
+                      <div className="group/item flex w-full items-center gap-3 rounded-2xl border border-white/50 bg-white/30 px-4 py-3 shadow-[inset_1px_1px_3px_rgba(255,255,255,0.9),2px_2px_6px_rgba(87,66,62,0.04)] transition-colors hover:bg-white/50">
+                        <div
+                          className={`h-2 w-2 shrink-0 rounded-full transition-colors ${
+                            isOn
+                              ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.55)]"
+                              : "bg-stone-400"
+                          }`}
+                        />
+
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-on-surface leading-tight">
                             {app.name}
                           </p>
+                          <p className="truncate text-[10px] text-on-surface-variant/60 leading-tight">
+                            {app.type} · Ch{app.channel ?? "?"}
+                            {app.gpio_pin != null ? ` · GPIO${app.gpio_pin}` : ""}
+                          </p>
                         </div>
-                        <p className="truncate text-[9px] text-on-surface-variant/60 leading-tight">
-                          {app.type} · Ch{app.channel ?? "?"}
-                          {app.gpio_pin != null ? ` · GPIO${app.gpio_pin}` : ""}
-                        </p>
+
+                        <div className="flex shrink-0 items-center gap-2">
+                          {canManage && (
+                            <div className="flex gap-1 opacity-0 transition-opacity group-hover/item:opacity-100">
+                              {updateApplianceAction && (
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingApplianceId(isEditing ? null : app.id)}
+                                  className="flex h-6 w-6 items-center justify-center rounded-lg border border-outline-variant/30 bg-surface-container text-on-surface-variant hover:bg-surface"
+                                >
+                                  <IconPencil size={11} />
+                                </button>
+                              )}
+                              <form action={deleteApplianceAction}>
+                                <input type="hidden" name="appliance_id" value={app.id} />
+                                <button
+                                  type="submit"
+                                  className="flex h-6 w-6 items-center justify-center rounded-lg border border-error/20 bg-error-container/10 text-error hover:bg-error-container/30"
+                                >
+                                  <IconX size={11} />
+                                </button>
+                              </form>
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            aria-label={isOn ? "Turn off" : "Turn on"}
+                            onClick={() => toggle(device.id, app.channel ?? 0, isOn, app.id)}
+                            className={`relative h-6 w-11 rounded-full border transition-all duration-200 focus:outline-none ${
+                              isOn
+                                ? "border-primary/30 bg-primary shadow-[inset_0_1px_3px_rgba(0,0,0,0.15)]"
+                                : "border-outline-variant/40 bg-surface-container-high shadow-[inset_2px_2px_4px_rgba(87,66,62,0.12),inset_-2px_-2px_4px_rgba(255,255,255,0.8)]"
+                            }`}
+                          >
+                            <span
+                              className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-[2px_2px_4px_rgba(87,66,62,0.15),inset_1px_1px_2px_rgba(255,255,255,0.9)] transition-transform duration-200 ${
+                                isOn ? "translate-x-5" : "translate-x-0"
+                              }`}
+                            />
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            toggle(device.id, app.channel ?? 0, isOn, app.id)
-                          }
-                          className={`rounded-md border px-2 py-0.5 text-[10px] font-bold transition-all ${
-                            isOn
-                              ? "border-primary-container bg-primary-fixed text-on-primary-fixed-variant"
-                              : "border-outline-variant bg-surface-container-low text-on-surface-variant hover:border-outline"
-                          }`}
+                      {isEditing && updateApplianceAction && (
+                        <form
+                          action={updateApplianceAction}
+                          onSubmit={() => setEditingApplianceId(null)}
+                          className="ml-4 flex flex-wrap items-center gap-1.5 rounded-xl border border-outline-variant/30 bg-surface p-2 text-xs"
                         >
-                          {isOn ? "On" : "Off"}
-                        </button>
-
-                        <div className="flex opacity-0 transition-opacity group-hover/item:opacity-100">
-                          <form action={deleteApplianceAction}>
-                            <input type="hidden" name="appliance_id" value={app.id} />
-                            <button
-                              type="submit"
-                              className="flex h-5 w-5 items-center justify-center rounded-md border border-error/20 bg-error-container/10 text-error hover:bg-error-container/30"
-                            >
-                              <IconX size={10} />
-                            </button>
-                          </form>
-                        </div>
-                      </div>
+                          <input type="hidden" name="appliance_id" value={app.id} />
+                          <input
+                            type="text"
+                            name="name"
+                            defaultValue={app.name}
+                            placeholder="Name"
+                            className="clay-inset w-24 rounded-lg border border-white/55 px-2 py-1 text-xs text-on-surface"
+                          />
+                          <input
+                            type="number"
+                            name="gpio_pin"
+                            defaultValue={app.gpio_pin ?? ""}
+                            placeholder="GPIO"
+                            min={0}
+                            max={48}
+                            className="clay-inset w-16 rounded-lg border border-white/55 px-2 py-1 text-xs text-on-surface"
+                          />
+                          <label className="flex items-center gap-1 text-[10px] text-on-surface-variant">
+                            <input type="checkbox" name="active_low" value="true" defaultChecked={app.active_low} />
+                            Active low
+                          </label>
+                          <button type="submit" className="rounded-lg border border-primary/30 bg-primary-container/30 px-2 py-1 text-[10px] font-semibold text-on-primary-container">
+                            Save
+                          </button>
+                          <button type="button" onClick={() => setEditingApplianceId(null)} className="rounded-lg border border-outline-variant/30 px-2 py-1 text-[10px] text-on-surface-variant">
+                            Cancel
+                          </button>
+                        </form>
+                      )}
                     </div>
                   )
                 })

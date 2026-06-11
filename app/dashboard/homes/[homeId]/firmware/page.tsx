@@ -59,44 +59,6 @@ export default async function FirmwarePage({
   )
   const allDevices = Array.from(roomDevices.values()).flat()
 
-  async function uploadAction(formData: FormData) {
-    "use server"
-    try {
-      const template = String(formData.get("template_id") ?? "").trim()
-      if (!template) {
-        redirect(pageHref(homeId, { error: "template_id is required", template_id: templateID }))
-      }
-
-      const uploadData = new FormData()
-      uploadData.append("template_id", template)
-
-      const version = String(formData.get("version") ?? "").trim()
-      if (version) {
-        uploadData.append("version", version)
-      }
-
-      const required = ["bootloader", "partition_table", "app"]
-      for (const key of required) {
-        const file = formData.get(key)
-        if (!(file instanceof File) || file.size === 0) {
-          redirect(pageHref(homeId, { error: `${key} file is required`, template_id: templateID }))
-        }
-        uploadData.append(key, file)
-      }
-
-      const source = formData.get("source")
-      if (source instanceof File && source.size > 0) {
-        uploadData.append("source", source)
-      }
-
-      await solCore.firmware.upload(uploadData)
-      redirect(pageHref(homeId, { notice: "Firmware uploaded", template_id: template }))
-    } catch (error) {
-      unstable_rethrow(error)
-      redirect(pageHref(homeId, { error: errorMessage(error), template_id: templateID }))
-    }
-  }
-
   async function otaAction(formData: FormData) {
     "use server"
     try {
@@ -153,8 +115,8 @@ export default async function FirmwarePage({
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          <section className="lg:col-span-2 space-y-6">
+        <div>
+          <section className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-stone-800">Available Versions</h2>
               <div className="flex items-center gap-2">
@@ -234,54 +196,6 @@ export default async function FirmwarePage({
               )}
             </div>
           </section>
-
-          <aside className="space-y-6">
-            <div className="rounded-[2rem] border border-white bg-stone-100 p-8 shadow-sm">
-              <h2 className="mb-6 text-xl font-bold text-stone-800">Manual Upload</h2>
-              <form action={uploadAction} className="space-y-4">
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-stone-500">Template ID</label>
-                  <input
-                    type="text"
-                    name="template_id"
-                    required
-                    placeholder="e.g. switch"
-                    className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-stone-500">Version</label>
-                  <input
-                    type="text"
-                    name="version"
-                    placeholder="e.g. v1.0.0 (optional)"
-                    className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-                <div className="space-y-3 pt-2">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-stone-600">Bootloader (.bin)</label>
-                    <input type="file" name="bootloader" required className="w-full text-xs text-stone-500 file:mr-4 file:rounded-full file:border-0 file:bg-stone-200 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-stone-700 hover:file:bg-stone-300" />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-stone-600">Partition Table (.bin)</label>
-                    <input type="file" name="partition_table" required className="w-full text-xs text-stone-500 file:mr-4 file:rounded-full file:border-0 file:bg-stone-200 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-stone-700 hover:file:bg-stone-300" />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-stone-600">Application (.bin)</label>
-                    <input type="file" name="app" required className="w-full text-xs text-stone-500 file:mr-4 file:rounded-full file:border-0 file:bg-stone-200 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-stone-700 hover:file:bg-stone-300" />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-stone-600">Source Code (.zip, optional)</label>
-                    <input type="file" name="source" className="w-full text-xs text-stone-500 file:mr-4 file:rounded-full file:border-0 file:bg-stone-200 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-stone-700 hover:file:bg-stone-300" />
-                  </div>
-                </div>
-                <button type="submit" className="mt-4 w-full rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-on-primary hover:opacity-90">
-                  Upload Firmware
-                </button>
-              </form>
-            </div>
-          </aside>
         </div>
       </div>
     </div>

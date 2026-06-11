@@ -84,7 +84,7 @@ export default async function RoomDetailPage({
   const otaAttempts = otaAttemptsRes?.data || []
 
   const onlineCount = devices.filter((device) => device.online).length
-  const activeCount = devices.filter((device) => coerceBool(device.state?.isOn)).length
+  const activeCount = appliances.filter((appliance) => coerceBool(appliance.state?.isOn)).length
 
   const primaryDevice = devices[0]
   const primaryOnlineDevice = devices.find((d) => d.online)

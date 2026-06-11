@@ -24,22 +24,24 @@ export default async function ActivityPage({
     .catch(() => ({ data: [], has_more: false, next_cursor: null }))
 
   return (
-    <div className="px-2 py-6 sm:px-4">
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-6 flex items-center gap-3">
-          <Link
-            href={`/dashboard/homes/${homeId}/rooms/${roomId}`}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/45 bg-surface-container text-on-surface shadow-[2px_2px_6px_rgba(87,66,62,0.07),-2px_-2px_6px_rgba(255,255,255,0.8)] hover:bg-surface-container-high transition-colors"
-          >
-            <IconArrowLeft size={16} />
-          </Link>
-          <div>
-            <p className="text-xs text-outline">{room.name}</p>
-            <h1 className="font-display text-xl font-semibold text-on-surface">Activity Log</h1>
+    <div className="flex-1 overflow-y-auto px-6 pb-6 pt-0 md:px-8 md:pb-8 md:pt-0">
+      <div className="-mt-0.5 mx-auto w-full max-w-7xl space-y-6">
+        <header className="rounded-[2rem] border border-white/60 bg-surface-container-low p-6 shadow-[10px_10px_24px_rgba(87,66,62,0.12),-10px_-10px_24px_rgba(255,255,255,0.92)]">
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/dashboard/homes/${homeId}/rooms/${roomId}`}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/45 bg-surface text-on-surface shadow-[2px_2px_6px_rgba(87,66,62,0.07),-2px_-2px_6px_rgba(255,255,255,0.8)] hover:bg-surface-container transition-colors"
+            >
+              <IconArrowLeft size={16} />
+            </Link>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{room.name}</p>
+              <h1 className="font-display mt-1 text-3xl font-semibold tracking-tight text-on-surface">Activity Log</h1>
+            </div>
           </div>
-        </div>
+        </header>
 
-        <section className="rounded-3xl border border-white/45 bg-surface-container p-5 shadow-[8px_8px_16px_rgba(87,66,62,0.05),-8px_-8px_16px_rgba(255,255,255,0.8)]">
+        <section className="w-full min-w-0 overflow-hidden rounded-3xl border border-white/45 bg-surface-container p-5 shadow-[8px_8px_16px_rgba(87,66,62,0.05),-8px_-8px_16px_rgba(255,255,255,0.8)]">
           <ActivityFeed
             homeId={homeId}
             roomId={roomId}

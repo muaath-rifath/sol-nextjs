@@ -52,6 +52,11 @@ export function SolChatWidget({ homeId }: { homeId: string }) {
       return
     }
 
+    if (type === "response.created") {
+      pendingAssistantId.current = null
+      return
+    }
+
     if (type === "response.text.delta" || type === "response.audio_transcript.delta") {
       const delta = (event.delta as string) ?? ""
       setMessages((prev) => {
@@ -75,7 +80,6 @@ export function SolChatWidget({ homeId }: { homeId: string }) {
         }
         return prev
       })
-      pendingAssistantId.current = null
       return
     }
 
@@ -136,6 +140,7 @@ export function SolChatWidget({ homeId }: { homeId: string }) {
           setConnected(true)
         }
         ws.onmessage = (ev) => {
+          if (wsRef.current !== ws) return
           try {
             dispatch(JSON.parse(ev.data as string) as Record<string, unknown>)
           } catch {
@@ -143,9 +148,11 @@ export function SolChatWidget({ homeId }: { homeId: string }) {
           }
         }
         ws.onclose = () => {
-          wsRef.current = null
-          setConnected(false)
-          if (!cancelled) scheduleReconnect()
+          if (wsRef.current === ws) {
+            wsRef.current = null
+            setConnected(false)
+            if (!cancelled) scheduleReconnect()
+          }
         }
         ws.onerror = () => ws.close()
       } catch {

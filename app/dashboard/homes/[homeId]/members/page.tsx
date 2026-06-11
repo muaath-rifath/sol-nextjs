@@ -1,6 +1,14 @@
 import { auth } from "@/auth"
+import MemberRoleSelect from "@/components/MemberRoleSelect"
 import { type HomeInvitation, type HomeMember, type MemberRole, solCore } from "@/lib/sol-core"
-import { IconCrown, IconMail, IconUserMinus, IconUserPlus } from "@tabler/icons-react"
+import {
+  IconCrown,
+  IconMail,
+  IconShieldLock,
+  IconUserMinus,
+  IconUserPlus,
+} from "@tabler/icons-react"
+import Link from "next/link"
 import { redirect, unstable_rethrow } from "next/navigation"
 
 export const dynamic = "force-dynamic"
@@ -241,7 +249,7 @@ export default async function MembersPage({
               {membersPage.data.length} {membersPage.data.length === 1 ? "person" : "people"}
             </span>
           </div>
-          <ul className="divide-y divide-outline-variant/45">
+          <ul className="flex flex-col gap-3">
             {membersPage.data.map((m) => {
               const isSelf = m.user_id === myUserId
               const targetIsOwner = m.role === "owner"
@@ -249,18 +257,21 @@ export default async function MembersPage({
               const canRemoveOther = canManage && !targetIsOwner && !isSelf
               const canTransfer = isOwner && !targetIsOwner && !isSelf
               const canLeave = isSelf && !targetIsOwner
+              const canEditPermissions = canManage && !targetIsOwner && !isSelf
+              const hasActions = canEditPermissions || canTransfer || canRemoveOther || canLeave
+              const memberLabel = m.user_name?.trim() || m.user_email || "Unnamed user"
               return (
                 <li
                   key={m.user_id}
-                  className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:gap-4"
+                  className="flex flex-col gap-3 rounded-2xl border border-white/45 bg-surface-container-low p-4 shadow-[inset_2px_2px_5px_rgba(27,28,25,0.05),inset_-2px_-2px_5px_rgba(255,255,255,0.7)] sm:flex-row sm:items-center sm:justify-between sm:gap-6"
                 >
-                  <div className="flex flex-1 items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-sm font-semibold text-on-surface shadow-[inset_2px_2px_4px_rgba(27,28,25,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.6)]">
+                  <div className="flex min-w-0 items-center gap-3 sm:flex-1">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-sm font-semibold text-on-surface shadow-[inset_2px_2px_4px_rgba(27,28,25,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.6)]">
                       {initials(m.user_name, m.user_email)}
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-on-surface">
-                        {m.user_name?.trim() || m.user_email || "Unnamed user"}
+                        {memberLabel}
                         {isSelf ? (
                           <span className="ml-2 text-xs font-normal text-on-surface-variant">(you)</span>
                         ) : null}
@@ -274,73 +285,77 @@ export default async function MembersPage({
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                    {canEditRole ? (
-                      <form
-                        action={updateRoleAction}
-                        className="flex items-center gap-2"
-                      >
-                        <input type="hidden" name="user_id" value={m.user_id} />
-                        <select
-                          name="role"
-                          defaultValue={m.role}
-                          className="clay-inset rounded-lg border border-white/55 bg-surface-container-low px-2 py-1.5 text-xs font-semibold text-on-surface"
+                  <div className="flex flex-col items-stretch gap-2 sm:items-end">
+                    <div className="flex justify-start sm:justify-end">
+                      {canEditRole ? (
+                        <MemberRoleSelect
+                          userId={m.user_id}
+                          currentRole={m.role as "admin" | "member"}
+                          memberLabel={memberLabel}
+                          action={updateRoleAction}
+                        />
+                      ) : (
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${roleBadgeClass(m.role)}`}
                         >
-                          <option value="admin">Admin</option>
-                          <option value="member">Member</option>
-                        </select>
-                        <button
-                          type="submit"
-                          className="rounded-lg border border-outline-variant px-2.5 py-1.5 text-xs font-semibold text-on-surface transition hover:bg-surface"
-                        >
-                          Save
-                        </button>
-                      </form>
-                    ) : (
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${roleBadgeClass(m.role)}`}
-                      >
-                        {m.role === "owner" ? <IconCrown size={12} /> : null}
-                        {m.role}
-                      </span>
-                    )}
+                          {m.role === "owner" ? <IconCrown size={12} /> : null}
+                          {m.role}
+                        </span>
+                      )}
+                    </div>
 
-                    {canTransfer ? (
-                      <form action={transferOwnershipAction}>
-                        <input type="hidden" name="user_id" value={m.user_id} />
-                        <button
-                          type="submit"
-                          className="rounded-lg border border-outline-variant px-2.5 py-1.5 text-xs font-semibold text-on-surface transition hover:bg-surface"
-                        >
-                          Transfer ownership
-                        </button>
-                      </form>
-                    ) : null}
+                    {hasActions ? (
+                      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                        {canEditPermissions ? (
+                          <Link
+                            href={`/dashboard/homes/${homeId}/members/${m.user_id}/permissions`}
+                            className="inline-flex items-center gap-1 rounded-lg border border-outline-variant bg-surface px-2.5 py-1.5 text-xs font-semibold text-on-surface transition hover:bg-surface-container"
+                          >
+                            <IconShieldLock size={12} />
+                            Permissions
+                          </Link>
+                        ) : null}
 
-                    {canRemoveOther ? (
-                      <form action={removeMemberAction}>
-                        <input type="hidden" name="user_id" value={m.user_id} />
-                        <button
-                          type="submit"
-                          className="inline-flex items-center gap-1 rounded-lg border border-error/60 px-2.5 py-1.5 text-xs font-semibold text-error transition hover:bg-error-container"
-                        >
-                          <IconUserMinus size={12} />
-                          Remove
-                        </button>
-                      </form>
-                    ) : null}
+                        {canTransfer ? (
+                          <form action={transferOwnershipAction}>
+                            <input type="hidden" name="user_id" value={m.user_id} />
+                            <button
+                              type="submit"
+                              className="inline-flex items-center gap-1 rounded-lg border border-outline-variant bg-surface px-2.5 py-1.5 text-xs font-semibold text-on-surface transition hover:bg-surface-container"
+                            >
+                              <IconCrown size={12} />
+                              Transfer ownership
+                            </button>
+                          </form>
+                        ) : null}
 
-                    {canLeave ? (
-                      <form action={removeMemberAction}>
-                        <input type="hidden" name="user_id" value={m.user_id} />
-                        <input type="hidden" name="is_self" value="1" />
-                        <button
-                          type="submit"
-                          className="rounded-lg border border-error/60 px-2.5 py-1.5 text-xs font-semibold text-error transition hover:bg-error-container"
-                        >
-                          Leave home
-                        </button>
-                      </form>
+                        {canRemoveOther ? (
+                          <form action={removeMemberAction}>
+                            <input type="hidden" name="user_id" value={m.user_id} />
+                            <button
+                              type="submit"
+                              className="inline-flex items-center gap-1 rounded-lg border border-error/60 px-2.5 py-1.5 text-xs font-semibold text-error transition hover:bg-error-container"
+                            >
+                              <IconUserMinus size={12} />
+                              Remove
+                            </button>
+                          </form>
+                        ) : null}
+
+                        {canLeave ? (
+                          <form action={removeMemberAction}>
+                            <input type="hidden" name="user_id" value={m.user_id} />
+                            <input type="hidden" name="is_self" value="1" />
+                            <button
+                              type="submit"
+                              className="inline-flex items-center gap-1 rounded-lg border border-error/60 px-2.5 py-1.5 text-xs font-semibold text-error transition hover:bg-error-container"
+                            >
+                              <IconUserMinus size={12} />
+                              Leave home
+                            </button>
+                          </form>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                 </li>
